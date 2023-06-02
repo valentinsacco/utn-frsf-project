@@ -17,6 +17,9 @@ const io = new Server(server, {
     allowEIO3: true
 })
 
+// (future feature): show online and offline nodes 
+const db = new Set<string>() 
+
 app.set('port', process.env.PORT || 4200)
 
 app.get('/', (_, res) => {
@@ -24,11 +27,15 @@ app.get('/', (_, res) => {
 })
 
 io.on('connection', (socket) => {
-    console.log('a user connected')
+    console.log('🎉 a user connected')
 
     socket.emit('ping', 'pong')
 
-    socket.emit('data', JSON.stringify({ data: 'Hello from server' }))
+    socket.on('node_id', (id: string) => {
+        db.add(id)
+    })
+
+    socket.emit('data', { data: 'Hello from server' })
 
     socket.on('data', (data) => {
         console.log(data)
