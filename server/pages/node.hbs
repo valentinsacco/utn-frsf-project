@@ -1,0 +1,74 @@
+{{#> layout}}
+    <div id="container" class='px-20 py-10'>
+        <button onclick="clockwise()" class='h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Agujas Del Reloj</button>
+        <button onclick="anticlockwise()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Contrario Agujas Del Reloj</button>
+        <button onclick="stopmotor()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Parar Motor</button>
+        <div id="chart"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        let options = {
+            series: [{
+                name: 'series1',
+                data: [20, 20, 20, 20, 20, 20, 20]
+            }],
+            chart: {
+                height: 350,
+                type: 'area'
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth'
+            },
+            xaxis: {
+                type: 'datetime',
+                categories: ["2018-09-19T00:00:00.000Z", "2018-09-19T01:30:00.000Z", "2018-09-19T02:30:00.000Z", "2018-09-19T03:30:00.000Z", "2018-09-19T04:30:00.000Z", "2018-09-19T05:30:00.000Z", "2018-09-19T06:30:00.000Z"]
+            },
+            tooltip: {
+                x: {
+                    format: 'dd/MM/yy HH:mm'
+                },
+            },
+        }
+
+        const chart = new ApexCharts(document.querySelector("#chart"), options)
+        const socket = new WebSocket('ws://localhost:4200')
+
+        const node_name = window.location.pathname.replace('/node/', '')
+
+        socket.onopen = () => {
+            console.log('🎉 WS Connected')
+        }
+
+        socket.onmessage = (e) => {
+            const event = e.data.split(':')[0]
+            const data = e.data.split(':')[1]
+
+            if (event === 'type') {
+                socket.send('type:client')
+            }
+        }
+
+        const clockwise = () => {
+            socket.send(`direction:clockwise.${node_name}`)
+        }
+
+        const anticlockwise = () => {
+            socket.send(`direction:anticlockwise.${node_name}`)
+        }
+
+        const stopmotor = () => {
+            socket.send('stop-motor:true')
+        }
+
+        const container = document.getElementById('container')
+
+        container.innerHTML += `
+            <h1 class='text-gray-800 text-xl'>${node_name}</h1>
+        `
+
+        chart.render()
+    </script>
+{{/layout}}

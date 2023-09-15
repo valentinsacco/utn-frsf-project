@@ -1,0 +1,147 @@
+{{#> layout}}
+    <nav class='h-20 w-full px-5 md:px-20 flex flex-row items-center'>
+        <img
+            src='https://www.frsf.utn.edu.ar/templates/utn17/img/utnsantafe-color.png'
+            class='h-10'
+        />
+    </nav>
+    <main class='h-[calc(100vh-80px)] w-full px-5 md:px-20 py-10'>
+        <h1 class='text-lg font-semibold mb-5'>Nodos en la red:</h1>
+        <ul
+            id='card-container'
+            class='grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 2xl:grid-cols-9 gap-2 xl:gap-6 w-full'
+        >
+            {{!-- {{#each db}}
+                <li
+                    class='bg-white rounded-lg col-span-1 shadow-md h-28 w-full py-2 px-4 flex flex-col justify-between cursor-pointer'
+                >
+                    <a href='/node/{{this.nodeName}}'>
+                        <div
+                            class='flex flex-row justify-between items-center w-full'
+                        >
+                            <span
+                                class='text-base text-gray-800'
+                            >{{this.nodeName}}</span>
+                            {{#if this.status}}
+                                <div
+                                    class='h-3.5 w-3.5 rounded-full bg-emerald-200 grid place-items-center'
+                                >
+                                    <div
+                                        class='h-2 w-2 rounded-full bg-emerald-500'
+                                    ></div>
+                                </div>
+                            {{else}}
+                                <div
+                                    class='h-3.5 w-3.5 rounded-full bg-red-200 grid place-items-center'
+                                >
+                                    <div
+                                        class='h-2 w-2 rounded-full bg-red-500'
+                                    ></div>
+                                </div>
+                            {{/if}}
+                        </div>
+                        <div>
+                            <span
+                                class='block text-sm text-gray-700'
+                            >latencia:
+                                <strong
+                                    class='font-semibold'
+                                >{{this.latency}} ms</strong></span>
+                        </div>
+                    </a>
+                </li>
+            {{/each}} --}}
+        </ul>
+    </main>
+<script>
+    const cardContainer = document.getElementById('card-container')
+    const cardWidth = 180
+
+    const setCardContainerGap = (winWidth) => {
+        const cardsPerRow = Math.floor(winWidth / cardWidth)
+        const gap = (winWidth - (cardsPerRow * cardWidth)) / (cardsPerRow - 1)
+
+        cardContainer.style.gap = `${gap}px`
+    }
+
+    const windowWidth = window.innerWidth
+    setCardContainerGap(windowWidth)
+
+    window.addEventListener('resize', e => {
+        const winWidth = e.target.innerWidth
+        setCardContainerGap(winWidth)
+    })
+
+
+
+    const socket = new WebSocket('ws://localhost:4200')
+
+    socket.onopen = () => {
+        console.log('🎉 WS Connected')
+
+        socket.send('get-nodes:test')
+    }
+
+    socket.onmessage = (e) => {
+        const event = e.data.split(':')[0]
+        const data = e.data.split(':')[1]
+        const payload = e.data.substring(event.length + data.length + 2)
+
+        if (event === 'type') {
+            socket.send('type:client')
+        }
+
+        if (event === 'nodes') {
+            const parsed = JSON.parse(payload)
+
+            cardContainer.innerHTML = ''
+            parsed.forEach(node => {
+                cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
+            })
+        }
+
+        if (event === 'client') {
+            const parsed = JSON.parse(payload)
+
+            cardContainer.innerHTML = ''
+            if (parsed.length === 0) {
+                cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
+            } else {
+                parsed.forEach(node => {
+                    cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
+                })
+            }
+        }
+    }
+
+    const cardTemplate = ({ nodeName, status }) => (`
+            <li
+                class='rounded-lg bg-white col-span-1 shadow-md h-28 w-full cursor-pointer'
+            >
+                <a href='${status ? `/node/${nodeName}` : '/'}' class='block h-28 w-full'>
+                    <div class='py-2 px-4 flex flex-col justify-between h-full w-full'>
+                        <div
+                            class='flex flex-row justify-between items-center w-full'
+                        >
+                            <span
+                                class='text-base text-gray-800'
+                            >${nodeName}</span>
+                            <div
+                                class='h-3.5 w-3.5 rounded-full bg-${status ? 'emerald' : 'red'}-200 grid place-items-center'
+                            >
+                                <div
+                                    class='h-2 w-2 rounded-full bg-${status ? 'emerald' : 'red'}-500'
+                                ></div>
+                            </div>
+                        </div>
+                        <div>
+                            <span
+                                class='block text-sm text-gray-700'
+                            >latencia:</span>
+                        </div>
+                    </div>
+                </a>
+            </li>
+        `) 
+    </script>
+{{/layout}}

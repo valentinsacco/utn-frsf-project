@@ -1,2 +1,11 @@
+# Server NodeJS Modules
 /server/node_modules
+
+# Server Build files
 /server/dist
+
+# Server Logs
+/server/set-online-nodes.png
+
+# MSTeams Changes
+v*.txt
