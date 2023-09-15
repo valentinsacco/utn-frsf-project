@@ -4,6 +4,9 @@
 # Server Build files
 /server/dist
 
+# Server Environment Variables
+/server/.env
+
 # Server Logs
 /server/set-online-nodes.png
 
