@@ -576,12 +576,24 @@ video {
   grid-column: span 4 / span 4;
 }
 
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
 .mb-5 {
   margin-bottom: 1.25rem;
 }
 
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
 .ml-4 {
   margin-left: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
 }
 
 .block {
@@ -622,6 +634,10 @@ video {
 
 .h-3\.5 {
   height: 0.875rem;
+}
+
+.h-4 {
+  height: 1rem;
 }
 
 .h-\[calc\(100vh-80px\)\] {
@@ -776,8 +792,16 @@ video {
   line-height: 1.75rem;
 }
 
+.font-medium {
+  font-weight: 500;
+}
+
 .font-semibold {
   font-weight: 600;
+}
+
+.capitalize {
+  text-transform: capitalize;
 }
 
 .text-gray-600 {

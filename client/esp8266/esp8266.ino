@@ -3,7 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <WebSocketsClient.h>
 
-const char* ssid = "";
+const char* ssid = "frsfpublica";
 const char* password = "";
 
 WebSocketsClient webSocket;
@@ -11,7 +11,7 @@ WebSocketsClient webSocket;
 const char* serverUrl = "";  // Dirección IP del servidor dentro de la red
 const int serverPort = 4200;
 
-const char* nodeName = "planta-001";  //Nombre del nodo
+const char* nodeName = "planta-002";  //Nombre del nodo
 
 bool P4BtnState = false;
 bool P4LastBtnState = false;
@@ -34,8 +34,9 @@ bool motorClockwise = true;
 void setup() {
   Serial.begin(115200);
 
-  //pinMode(4, INPUT);
-  pinMode(4, OUTPUT);
+  pinMode(3, INPUT);
+  pinMode(4, INPUT);
+  pinMode(5, OUTPUT);
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
   pinMode(motorPin3, OUTPUT);
@@ -67,6 +68,13 @@ void loop() {
     }
   }
 
+  // sendAnalogData();
+  // Datos continuos
+  int A0Value = analogRead(A0);
+  String A0Data = "continuous-data:" + String(A0Value);
+
+  webSocket.sendTXT(A0Data); 
+  delay(500);
 
   // Leyendo el estado del pin GPIO 4 o D2 (ESP8266)
   P4BtnState = digitalRead(4);
@@ -80,6 +88,16 @@ void loop() {
     }
     P4LastBtnState = P4BtnState;
   }
+}
+
+void sendAnalogData () {
+// Datos continuos
+  int A0Value = analogRead(A0);
+  String A0Data = "continuous-data:" + String(A0Value);
+
+  Serial.println(A0Data);
+  webSocket.sendTXT(A0Data); 
+  delay(500);
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
@@ -124,12 +142,12 @@ void handleWebSocketConnection(char* message) {
       Serial.print(value);
       if (strcmp(value, "clockwise") == 0) {
         Serial.print("Girando en sentindo de las agujas del reloj");
-        digitalWrite(4, HIGH);
+        digitalWrite(5, HIGH);
         motorClockwise = true;
         motorWorking = true;
       } else if (strcmp(value, "anticlockwise") == 0) {
         Serial.print("Girando en sentindo contrario a las agujas del reloj");
-        digitalWrite(4, LOW);
+        digitalWrite(5, LOW);
         motorClockwise = false;
         motorWorking = true;
       }

@@ -1,20 +1,44 @@
 {{#> layout}}
     <div id="container" class='px-20 py-10'>
+        <div class='flex flex-row gap-2 items-center mb-6'>
+            <div
+                id='node-status-background'
+                class='h-3.5 w-3.5 rounded-full bg-emerald-200 grid place-items-center'
+            >
+                <div
+                    id='node-status'
+                    class='h-2 w-2 rounded-full bg-emerald-500'
+                ></div>
+            </div>
+            <h1 id='node-name' class='text-gray-800 text-xl capitalize'></h1>
+        </div>
         <button onclick="clockwise()" class='h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Agujas Del Reloj</button>
         <button onclick="anticlockwise()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Contrario Agujas Del Reloj</button>
         <button onclick="stopmotor()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Parar Motor</button>
-        <div id="chart"></div>
+        <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de 50 [segundos]:</h2>
+        <div id="shortchart"></div>
+        <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de todos los valores tomados:</h2>
+        <div id="totalchart"></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         let options = {
-            series: [{
-                name: 'series1',
-                data: [20, 20, 20, 20, 20, 20, 20]
-            }],
+            series: [],
             chart: {
                 height: 350,
-                type: 'area'
+                type: 'area',
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: false,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true
+                    }
+                }
             },
             dataLabels: {
                 enabled: false
@@ -24,19 +48,48 @@
             },
             xaxis: {
                 type: 'datetime',
-                categories: ["2018-09-19T00:00:00.000Z", "2018-09-19T01:30:00.000Z", "2018-09-19T02:30:00.000Z", "2018-09-19T03:30:00.000Z", "2018-09-19T04:30:00.000Z", "2018-09-19T05:30:00.000Z", "2018-09-19T06:30:00.000Z"]
+            },
+            yaxis: {
+                min: 1,
+                max: 1024,
             },
             tooltip: {
                 x: {
                     format: 'dd/MM/yy HH:mm'
                 },
             },
+            noData: {
+                text: 'No hay datos disponibles'
+            }
         }
 
-        const chart = new ApexCharts(document.querySelector("#chart"), options)
+        const shortChartOptions = { ...options, chart: {
+                height: 350,
+                type: 'area',
+                animations: {
+                    dynamicAnimation: {
+                        enabled: false,
+                    }
+                }
+            } 
+        }
+
+        const shortChart = new ApexCharts(document.querySelector("#shortchart"), shortChartOptions)
+        const totalChart = new ApexCharts(document.querySelector("#totalchart"), options)
         const socket = new WebSocket('ws://localhost:4200')
+        // const socket = new WebSocket('ws://iphost:4200') // Cambiar este valor por la IP del servidor
 
         const node_name = window.location.pathname.replace('/node/', '')
+        const nodeNameH1 = document.getElementById('node-name')
+        nodeNameH1.innerText = node_name
+
+        const nodeStatusBackground = document.getElementById('node-status-background')
+        const nodeStatusPoint = document.getElementById('node-status')
+
+        let nodeStatus = true
+        const chartData = []
+        const shortChartData = []
+        const maxDataPoints = 100
 
         socket.onopen = () => {
             console.log('🎉 WS Connected')
@@ -45,18 +98,80 @@
         socket.onmessage = (e) => {
             const event = e.data.split(':')[0]
             const data = e.data.split(':')[1]
+            const payload = e.data.substring(event.length + data.length + 2)
 
             if (event === 'type') {
                 socket.send('type:client')
             }
+
+            if (event === 'client') {
+                const subevent = data
+
+                if (subevent === 'status') {
+                    const parsed = JSON.parse(payload)
+
+                    if (Array.isArray(parsed)) {
+                        parsed.forEach(node => {
+                            // '🟢' : '🔴'
+                            if (node.nodeName === node_name) {
+                                nodeStatus = node.status
+                                nodeStatusBackground.classList.remove('bg-red-200')
+                                nodeStatusBackground.classList.remove('bg-emerald-200')
+                                nodeStatusBackground.classList.add(`bg-${node.status ? 'emerald' : 'red'}-200`)
+                                nodeStatusPoint.classList.remove('bg-red-500')
+                                nodeStatusPoint.classList.remove('bg-emerald-500')
+                                nodeStatusPoint.classList.add(`bg-${node.status ? 'emerald' : 'red'}-500`)
+                            }
+                        })
+                    }
+                }
+
+                if (subevent === 'continuous-data') {
+                    const value = parseFloat(payload)
+
+                    if (!isNaN(value)) {
+                        if (shortChartData.length >= maxDataPoints) {
+                            shortChartData.shift()
+                        }
+
+                        chartData.push({
+                            x: new Date().getTime(),
+                            y: value
+                        })
+
+                        shortChartData.push({
+                            x: new Date().getTime(),
+                            y: value
+                        })
+
+                        shortChart.updateSeries([{
+                            name: node_name,
+                            data: shortChartData
+                        }])
+
+                        totalChart.updateSeries([{
+                            name: node_name,
+                            data: chartData
+                        }])
+                    }
+                }
+                // const parsed_data = JSON.parse(data)
+                // const { node, value } = parsed_data
+
+                // if (node === node_name) {
+                //     const new_data = chart.w.globals.series[0].data.slice(1)
+                //     new_data.push(value)
+                //     chart.updateSeries([{ data: new_data }])
+                // }
+            }
         }
 
         const clockwise = () => {
-            socket.send(`direction:clockwise.${node_name}`)
+            socket.send(`direction:clockwise:${node_name}`)
         }
 
         const anticlockwise = () => {
-            socket.send(`direction:anticlockwise.${node_name}`)
+            socket.send(`direction:anticlockwise:${node_name}`)
         }
 
         const stopmotor = () => {
@@ -65,10 +180,7 @@
 
         const container = document.getElementById('container')
 
-        container.innerHTML += `
-            <h1 class='text-gray-800 text-xl'>${node_name}</h1>
-        `
-
-        chart.render()
+        shortChart.render()
+        totalChart.render()
     </script>
 {{/layout}}

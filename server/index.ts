@@ -10,6 +10,10 @@ const server = createServer(app)
 
 const ws = new Server({ server, clientTracking: true })
 
+const pingIntervalTime = 500
+const savedValues: number[] = []
+const maxValues = 100
+
 enum NodeState {
     ONLINE = 'online',
     OFFLINE = 'offline',
@@ -51,20 +55,26 @@ ws.on('connection', (socket: CustomWebSocket) => {
     let socket_type: string | null = null
 
     socket.send('type:server')
-    
+
     const pingInterval = setInterval(() => {
         if (ping_time !== undefined && pong_time !== undefined) {
-            if (Date.now() - ping_time > 500 && last_pong_time === pong_time) {
+            if (
+                Date.now() - ping_time > pingIntervalTime &&
+                last_pong_time === pong_time
+            ) {
                 if (node_name && db.has(node_name)) {
                     db.set(node_name, NodeState.OFFLINE)
                 }
                 console.log(`🙁 [server]: Nodo ${node_name} desconectado`)
                 console.log(db)
-                const parsedDB: { [nodeName: string]: any }[] = Array.from(db).map(
-                    ([key, value]) => {
-                        return { nodeName: key, status: !!(value === NodeState.ONLINE) }
+                const parsedDB: { [nodeName: string]: any }[] = Array.from(
+                    db
+                ).map(([key, value]) => {
+                    return {
+                        nodeName: key,
+                        status: !!(value === NodeState.ONLINE)
                     }
-                )
+                })
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
                         client.send(`client:status:${JSON.stringify(parsedDB)}`)
@@ -80,7 +90,7 @@ ws.on('connection', (socket: CustomWebSocket) => {
             ping_time = Date.now()
             socket.ping()
         }
-    }, 500)
+    }, pingIntervalTime)
 
     const pongInterval = setInterval(() => {
         if (node_disconnected) {
@@ -88,11 +98,12 @@ ws.on('connection', (socket: CustomWebSocket) => {
         }
 
         last_pong_time = pong_time
-    }, 500)
+    }, pingIntervalTime)
 
     socket.on('message', (msg: string) => {
         const event = Buffer.from(msg, 'base64').toString('ascii').split(':')[0]
         const data = Buffer.from(msg, 'base64').toString('ascii').split(':')[1]
+        const payload = Buffer.from(msg, 'base64').toString('ascii').substring(event.length + data.length + 2)
 
         if (event === 'ping') {
             const end_time: number = Date.now()
@@ -108,6 +119,21 @@ ws.on('connection', (socket: CustomWebSocket) => {
             if (data === 'client') {
                 socket_type = SocketType.CLIENT
                 console.log('🎉 [server]: Nuevo cliente conectado')
+
+                const parsedDB: { [nodeName: string]: any }[] = Array.from(db).map(
+                    ([key, value]) => {
+                        return {
+                            nodeName: key,
+                            status: !!(value === NodeState.ONLINE)
+                        }
+                    }
+                )
+
+                ws.clients.forEach((client) => {
+                    if (client.readyState === OPEN) {
+                        client.send(`client:status:${JSON.stringify(parsedDB)}`)
+                    }
+                })
             }
         }
 
@@ -119,7 +145,10 @@ ws.on('connection', (socket: CustomWebSocket) => {
             console.log(db)
             const parsedDB: { [nodeName: string]: any }[] = Array.from(db).map(
                 ([key, value]) => {
-                    return { nodeName: key, status: !!(value === NodeState.ONLINE) }
+                    return {
+                        nodeName: key,
+                        status: !!(value === NodeState.ONLINE)
+                    }
                 }
             )
             ws.clients.forEach((client) => {
@@ -132,7 +161,10 @@ ws.on('connection', (socket: CustomWebSocket) => {
         if (event === 'get-nodes') {
             const parsedDB: { [nodeName: string]: any }[] = Array.from(db).map(
                 ([key, value]) => {
-                    return { nodeName: key, status: !!(value === NodeState.ONLINE) }
+                    return {
+                        nodeName: key,
+                        status: !!(value === NodeState.ONLINE)
+                    }
                 }
             )
 
@@ -142,39 +174,56 @@ ws.on('connection', (socket: CustomWebSocket) => {
         if (event === 'state-change') {
         }
 
+        if (event === 'continuous-data') {
+            const parsedValue = parseFloat(data)
+
+            if (!isNaN(parsedValue)) {
+                savedValues.push(parsedValue)
+                // if (savedValues.length > maxValues) {
+                //     savedValues.shift()
+                // }
+            }
+
+            ws.clients.forEach((client) => {
+                if (client !== socket && client.readyState === OPEN) {
+                    client.send(`client:continuous-data:${data}`)
+                }
+            })
+        }
+
         if (event === 'direction') {
-            const direction = data.split('.')[0]
-            const socket_id = data.split('.')[1]
+            const direction = data
+            const socket_id = payload
 
             if (direction === 'clockwise') {
-                ws.clients.forEach(client => {
+                ws.clients.forEach((client) => {
                     if ('socket_id' in client) {
                         const customClient = client as CustomWebSocket
-    
+
                         if (customClient.readyState === OPEN) {
                             if (customClient.socket_id === socket_id) {
                                 customClient.send('direction:clockwise')
                             }
                         }
                     }
-                })                
+                })
             } else {
-                ws.clients.forEach(client => {
+                ws.clients.forEach((client) => {
                     if ('socket_id' in client) {
                         const customClient = client as CustomWebSocket
-    
+
                         if (customClient.readyState === OPEN) {
                             if (customClient.socket_id === socket_id) {
                                 customClient.send('direction:anticlockwise')
                             }
                         }
                     }
-                })                
+                })
             }
         }
 
         if (event === 'stop-motor') {
-            ws.clients.forEach(client => {
+            ws.clients.forEach((client) => {
                 if ('socket_id' in client) {
                     const customClient = client as CustomWebSocket
 

@@ -10,48 +10,7 @@
         <ul
             id='card-container'
             class='grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 2xl:grid-cols-9 gap-2 xl:gap-6 w-full'
-        >
-            {{!-- {{#each db}}
-                <li
-                    class='bg-white rounded-lg col-span-1 shadow-md h-28 w-full py-2 px-4 flex flex-col justify-between cursor-pointer'
-                >
-                    <a href='/node/{{this.nodeName}}'>
-                        <div
-                            class='flex flex-row justify-between items-center w-full'
-                        >
-                            <span
-                                class='text-base text-gray-800'
-                            >{{this.nodeName}}</span>
-                            {{#if this.status}}
-                                <div
-                                    class='h-3.5 w-3.5 rounded-full bg-emerald-200 grid place-items-center'
-                                >
-                                    <div
-                                        class='h-2 w-2 rounded-full bg-emerald-500'
-                                    ></div>
-                                </div>
-                            {{else}}
-                                <div
-                                    class='h-3.5 w-3.5 rounded-full bg-red-200 grid place-items-center'
-                                >
-                                    <div
-                                        class='h-2 w-2 rounded-full bg-red-500'
-                                    ></div>
-                                </div>
-                            {{/if}}
-                        </div>
-                        <div>
-                            <span
-                                class='block text-sm text-gray-700'
-                            >latencia:
-                                <strong
-                                    class='font-semibold'
-                                >{{this.latency}} ms</strong></span>
-                        </div>
-                    </a>
-                </li>
-            {{/each}} --}}
-        </ul>
+        ></ul>
     </main>
 <script>
     const cardContainer = document.getElementById('card-container')
@@ -101,15 +60,17 @@
         }
 
         if (event === 'client') {
-            const parsed = JSON.parse(payload)
+            if (data === 'status') {
+                const parsed = JSON.parse(payload)
 
-            cardContainer.innerHTML = ''
-            if (parsed.length === 0) {
-                cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
-            } else {
-                parsed.forEach(node => {
-                    cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
-                })
+                cardContainer.innerHTML = ''
+                if (parsed.length === 0) {
+                    cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
+                } else {
+                    parsed.forEach(node => {
+                        cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
+                    })
+                }
             }
         }
     }
