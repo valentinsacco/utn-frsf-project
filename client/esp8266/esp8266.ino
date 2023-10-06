@@ -11,10 +11,12 @@ WebSocketsClient webSocket;
 const char* serverUrl = "";  // Dirección IP del servidor dentro de la red
 const int serverPort = 4200;
 
-const char* nodeName = "planta-002";  //Nombre del nodo
+const char* nodeName = "planta-001";  //Nombre del nodo
 
 bool P4BtnState = false;
 bool P4LastBtnState = false;
+
+unsigned long lastAnalogPinReadTime = 0;
 
 const int motorPin1 = 12;
 const int motorPin2 = 13;
@@ -36,7 +38,6 @@ void setup() {
 
   pinMode(3, INPUT);
   pinMode(4, INPUT);
-  pinMode(5, OUTPUT);
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
   pinMode(motorPin3, OUTPUT);
@@ -56,6 +57,8 @@ void setup() {
 
 
 void loop() {
+  unsigned long currentTime = millis();
+
   webSocket.loop();
 
   if (motorWorking) {
@@ -68,13 +71,13 @@ void loop() {
     }
   }
 
-  // sendAnalogData();
-  // Datos continuos
-  int A0Value = analogRead(A0);
-  String A0Data = "continuous-data:" + String(A0Value);
-
-  webSocket.sendTXT(A0Data); 
-  delay(500);
+  if ((currentTime - lastAnalogPinReadTime) >= 300) {
+    int A0Value = analogRead(A0);
+    String A0Data = "continuous-data:" + String(A0Value);
+    Serial.println(A0Data);
+    webSocket.sendTXT(A0Data); 
+    lastAnalogPinReadTime = currentTime;
+  }
 
   // Leyendo el estado del pin GPIO 4 o D2 (ESP8266)
   P4BtnState = digitalRead(4);
@@ -88,16 +91,6 @@ void loop() {
     }
     P4LastBtnState = P4BtnState;
   }
-}
-
-void sendAnalogData () {
-// Datos continuos
-  int A0Value = analogRead(A0);
-  String A0Data = "continuous-data:" + String(A0Value);
-
-  Serial.println(A0Data);
-  webSocket.sendTXT(A0Data); 
-  delay(500);
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
@@ -139,18 +132,20 @@ void handleWebSocketConnection(char* message) {
     }
 
     if (strcmp(event, "direction") == 0) {
-      Serial.print(value);
       if (strcmp(value, "clockwise") == 0) {
-        Serial.print("Girando en sentindo de las agujas del reloj");
-        digitalWrite(5, HIGH);
+        Serial.println("[DigitalPin]: Motor girando en sentindo de las agujas del reloj");
         motorClockwise = true;
         motorWorking = true;
       } else if (strcmp(value, "anticlockwise") == 0) {
-        Serial.print("Girando en sentindo contrario a las agujas del reloj");
-        digitalWrite(5, LOW);
+        Serial.println("[DigitalPin]: Motor girando en sentindo contrario a las agujas del reloj");
         motorClockwise = false;
         motorWorking = true;
       }
+    }
+
+    if (strcmp(event, "stop-motor") == 0) {
+      Serial.println("[DigitalPin]: Motor parado");
+      motorWorking = false;
     }
 
     String command = String(event);

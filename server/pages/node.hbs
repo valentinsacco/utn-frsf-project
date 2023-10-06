@@ -175,7 +175,7 @@
         }
 
         const stopmotor = () => {
-            socket.send('stop-motor:true')
+            socket.send(`stop-motor:true:${node_name}`)
         }
 
         const container = document.getElementById('container')

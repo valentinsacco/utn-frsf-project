@@ -1,3 +1,4 @@
+import { Server as ServerType } from 'http'
 import WebSocket, { Server, OPEN } from 'ws'
 
 const pingIntervalTime = 500
@@ -21,7 +22,7 @@ interface CustomWebSocket extends WebSocket {
 
 const db = new Map<string, NodeState>()
 
-export const websockets = (server: any) => {
+export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
 
     ws.on('connection', (socket: CustomWebSocket) => {
@@ -212,12 +213,14 @@ export const websockets = (server: any) => {
             }
 
             if (event === 'stop-motor') {
+                const socket_id = payload
+
                 ws.clients.forEach((client) => {
                     if ('socket_id' in client) {
                         const customClient = client as CustomWebSocket
 
                         if (customClient.readyState === OPEN) {
-                            if (customClient.socket_id === 'planta-001') {
+                            if (customClient.socket_id === socket_id) {
                                 customClient.send('stop-motor:true')
                             }
                         }
