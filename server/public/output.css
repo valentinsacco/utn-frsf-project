@@ -588,6 +588,10 @@ video {
   margin-bottom: 1.5rem;
 }
 
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
 .ml-4 {
   margin-left: 1rem;
 }
@@ -634,10 +638,6 @@ video {
 
 .h-3\.5 {
   height: 0.875rem;
-}
-
-.h-4 {
-  height: 1rem;
 }
 
 .h-\[calc\(100vh-80px\)\] {

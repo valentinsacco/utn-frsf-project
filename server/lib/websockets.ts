@@ -1,15 +1,17 @@
 import { Server as ServerType } from 'http'
 import WebSocket, { Server, OPEN } from 'ws'
 
+import prisma from './prisma'
+
 const pingIntervalTime = 500
 const savedValues: number[] = []
 const maxValues = 100
 
-enum NodeState {
-    ONLINE = 'online',
-    OFFLINE = 'offline',
-    UNKNOWN = 'unknown'
-}
+// enum NodeState {
+//     ONLINE = 'online',
+//     OFFLINE = 'offline',
+//     UNKNOWN = 'unknown'
+// }
 
 enum SocketType {
     NODE = 'node',
@@ -20,7 +22,7 @@ interface CustomWebSocket extends WebSocket {
     socket_id: string
 }
 
-const db = new Map<string, NodeState>()
+// const db = new Map<string, NodeState>()
 
 export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
@@ -36,29 +38,30 @@ export const websockets = (server: ServerType) => {
 
         socket.send('type:server')
 
-        const pingInterval = setInterval(() => {
+        const pingInterval = setInterval(async () => {
             if (ping_time !== undefined && pong_time !== undefined) {
                 if (
                     Date.now() - ping_time > pingIntervalTime &&
                     last_pong_time === pong_time
                 ) {
-                    if (node_name && db.has(node_name)) {
-                        db.set(node_name, NodeState.OFFLINE)
+                    if (node_name) {
+                        await prisma.node.update({
+                            where: {
+                                name: node_name
+                            },
+                            data: {
+                                status: false
+                            }
+                        })
                     }
+
                     console.log(`🙁 [server]: Nodo ${node_name} desconectado`)
-                    console.log(db)
-                    const parsedDB: { [nodeName: string]: any }[] = Array.from(
-                        db
-                    ).map(([key, value]) => {
-                        return {
-                            nodeName: key,
-                            status: !!(value === NodeState.ONLINE)
-                        }
-                    })
+
+                    const nodes = await prisma.node.findMany()
                     ws.clients.forEach((client) => {
                         if (client.readyState === OPEN) {
                             client.send(
-                                `client:status:${JSON.stringify(parsedDB)}`
+                                `client:status:${JSON.stringify(nodes)}`
                             )
                         }
                     })
@@ -82,7 +85,7 @@ export const websockets = (server: ServerType) => {
             last_pong_time = pong_time
         }, pingIntervalTime)
 
-        socket.on('message', (msg: string) => {
+        socket.on('message', async (msg: string) => {
             const event = Buffer.from(msg, 'base64')
                 .toString('ascii')
                 .split(':')[0]
@@ -108,19 +111,12 @@ export const websockets = (server: ServerType) => {
                     socket_type = SocketType.CLIENT
                     console.log('🎉 [server]: Nuevo cliente conectado')
 
-                    const parsedDB: { [nodeName: string]: any }[] = Array.from(
-                        db
-                    ).map(([key, value]) => {
-                        return {
-                            nodeName: key,
-                            status: !!(value === NodeState.ONLINE)
-                        }
-                    })
+                    const nodes = await prisma.node.findMany()
 
                     ws.clients.forEach((client) => {
                         if (client.readyState === OPEN) {
                             client.send(
-                                `client:status:${JSON.stringify(parsedDB)}`
+                                `client:status:${JSON.stringify(nodes)}`
                             )
                         }
                     })
@@ -131,34 +127,44 @@ export const websockets = (server: ServerType) => {
                 node_name = data
                 socket.socket_id = node_name
                 console.log(`🎉 [server]: Nodo ${node_name} conectado`)
-                db.set(data, NodeState.ONLINE)
-                console.log(db)
-                const parsedDB: { [nodeName: string]: any }[] = Array.from(
-                    db
-                ).map(([key, value]) => {
-                    return {
-                        nodeName: key,
-                        status: !!(value === NodeState.ONLINE)
+
+                const existNode = await prisma.node.findUnique({
+                    where: {
+                        name: node_name
                     }
                 })
+
+                if (existNode) {
+                    await prisma.node.update({
+                        where: {
+                            name: node_name
+                        },
+                        data: {
+                            status: true
+                        }
+                    })
+                } else {
+                    await prisma.node.create({
+                        data: {
+                            name: node_name,
+                            status: true
+                        }
+                    })
+                }
+
+                const nodes = await prisma.node.findMany()
+
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(`client:status:${JSON.stringify(parsedDB)}`)
+                        client.send(`client:status:${JSON.stringify(nodes)}`)
                     }
                 })
             }
 
             if (event === 'get-nodes') {
-                const parsedDB: { [nodeName: string]: any }[] = Array.from(
-                    db
-                ).map(([key, value]) => {
-                    return {
-                        nodeName: key,
-                        status: !!(value === NodeState.ONLINE)
-                    }
-                })
+                const nodes = await prisma.node.findMany()
 
-                socket.send(`client:nodes:${JSON.stringify(parsedDB)}`)
+                socket.send(`client:nodes:${JSON.stringify(nodes)}`)
             }
 
             if (event === 'state-change') {
@@ -166,17 +172,25 @@ export const websockets = (server: ServerType) => {
 
             if (event === 'continuous-data') {
                 const parsedValue = parseFloat(data)
+                const socket_id = payload
 
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
-                    // if (savedValues.length > maxValues) {
-                    //     savedValues.shift()
-                    // }
+                    await prisma.node.update({
+                        where: {
+                            name: socket_id
+                        },
+                        data: {
+                            status: true
+                        }
+                    })
                 }
 
                 ws.clients.forEach((client) => {
                     if (client !== socket && client.readyState === OPEN) {
-                        client.send(`client:continuous-data:${data}`)
+                        client.send(
+                            `client:continuous-data:${data}/${socket_id}`
+                        )
                     }
                 })
             }

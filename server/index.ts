@@ -15,7 +15,7 @@ enum NodeState {
     UNKNOWN = 'unknown'
 }
 
-const db = new Map<string, NodeState>()
+// const db = new Map<string, NodeState>()
 
 app.set('port', process.env.PORT || 4200)
 app.engine('hbs', engine({ extname: '.hbs', defaultLayout: 'main' }))
@@ -26,9 +26,12 @@ app.get('/', (_, res) => {
     res.render('index')
 })
 
+
 app.get('/node/:node_name', (req, res) => {
     const { node_name } = req.params
-    res.render('node', { node_name, db })
+
+    // Check if node exists in db
+    res.render('node', { node_name, db: [] })
 })
 
 websockets(server)

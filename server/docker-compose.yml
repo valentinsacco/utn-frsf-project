@@ -3,6 +3,8 @@ version: '3.8'
 services: 
   app:
     build: .
+    container_name: nodes-server
+    
     depends_on: 
       - mysql
     links:
@@ -11,6 +13,7 @@ services:
       - "4200:4200"
   mysql: 
     image: mysql:5.7
+    container_name: nodes-database
     environment: 
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -18,3 +21,13 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
+  shadow-db:
+    image: mysql:5.7
+    container_name: nodes-shadow-database
+    environment: 
+      MYSQL_ROOT_PASSWORD: ${SHADOW_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${SHADOW_MYSQL_DATABASE}
+      MYSQL_USER: ${SHADOW_MYSQL_USER}
+      MYSQL_PASSWORD: ${SHADOW_MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"

@@ -55,7 +55,7 @@
 
             cardContainer.innerHTML = ''
             parsed.forEach(node => {
-                cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
+                cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
             })
         }
 
@@ -68,7 +68,7 @@
                     cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
                 } else {
                     parsed.forEach(node => {
-                        cardContainer.innerHTML += cardTemplate({ nodeName: node.nodeName, status: node.status })
+                        cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
                     })
                 }
             }

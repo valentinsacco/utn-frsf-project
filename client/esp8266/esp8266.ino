@@ -13,6 +13,7 @@ const int serverPort = 4200;
 
 const char* nodeName = "planta-001";  //Nombre del nodo
 
+bool connectedToServer = false;
 bool P4BtnState = false;
 bool P4LastBtnState = false;
 
@@ -61,35 +62,37 @@ void loop() {
 
   webSocket.loop();
 
-  if (motorWorking) {
-    if (motorClockwise) {
-      clockwise();
-      delayMicroseconds(motorSpeed);
-    } else {
-      anticlockwise();
-      delayMicroseconds(motorSpeed);
+  if (connectedToServer) {
+    if (motorWorking) {
+      if (motorClockwise) {
+        clockwise();
+        delayMicroseconds(motorSpeed);
+      } else {
+        anticlockwise();
+        delayMicroseconds(motorSpeed);
+      }
     }
-  }
 
-  if ((currentTime - lastAnalogPinReadTime) >= 300) {
-    int A0Value = analogRead(A0);
-    String A0Data = "continuous-data:" + String(A0Value);
-    Serial.println(A0Data);
-    webSocket.sendTXT(A0Data); 
-    lastAnalogPinReadTime = currentTime;
-  }
-
-  // Leyendo el estado del pin GPIO 4 o D2 (ESP8266)
-  P4BtnState = digitalRead(4);
-
-  // Pasando el estado (si hay un cambio de estado) al servidor vía WebSockets
-  if (P4BtnState != P4LastBtnState) {
-    if (P4BtnState == HIGH) {
-      webSocket.sendTXT("state-change:HIGH");
-    } else {
-      webSocket.sendTXT("state-change:LOW");
+    if ((currentTime - lastAnalogPinReadTime) >= 300) {
+      int A0Value = analogRead(A0);
+      String A0Data = "continuous-data:" + String(A0Value) + ":" + String(nodeName);
+      Serial.println(A0Data);
+      webSocket.sendTXT(A0Data); 
+      lastAnalogPinReadTime = currentTime;
     }
-    P4LastBtnState = P4BtnState;
+
+    // Leyendo el estado del pin GPIO 4 o D2 (ESP8266)
+    P4BtnState = digitalRead(4);
+
+    // Pasando el estado (si hay un cambio de estado) al servidor vía WebSockets
+    if (P4BtnState != P4LastBtnState) {
+      if (P4BtnState == HIGH) {
+        webSocket.sendTXT("state-change:HIGH");
+      } else {
+        webSocket.sendTXT("state-change:LOW");
+      }
+      P4LastBtnState = P4BtnState;
+    }
   }
 }
 
@@ -97,9 +100,13 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
       Serial.println("Disconnected from WebSocket server");
+      connectedToServer = false;
       break;
     case WStype_CONNECTED:
       Serial.println("Connected to WebSocket server");
+      connectedToServer = true;
+      String initialMotorStatus = String("initial-status:motor:") + (motorWorking ? "true" : "false") + String("/") + String(nodeName);
+      webSocket.sendTXT(initialMotorStatus);
       break;
     case WStype_TEXT:
       handleWebSocketConnection((char*)payload);

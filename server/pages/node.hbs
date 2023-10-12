@@ -12,9 +12,15 @@
             </div>
             <h1 id='node-name' class='text-gray-800 text-xl capitalize'></h1>
         </div>
-        <button onclick="clockwise()" class='h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Agujas Del Reloj</button>
-        <button onclick="anticlockwise()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Contrario Agujas Del Reloj</button>
-        <button onclick="stopmotor()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Parar Motor</button>
+       <div>
+            <div class='flex flex-row items-center mt-4 mb-2'>
+                <h2 class='font-medium text-lg text-gray-600'>Motor</h2>
+                <div class='ml-2' id='motor-status'>🔴</div>
+            </div>
+            <button onclick="clockwise()" class='h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Agujas Del Reloj</button>
+            <button onclick="anticlockwise()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Contrario Agujas Del Reloj</button>
+            <button onclick="stopmotor()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Parar Motor</button>
+       </div>
         <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de 50 [segundos]:</h2>
         <div id="shortchart"></div>
         <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de todos los valores tomados:</h2>
@@ -74,6 +80,8 @@
             } 
         }
 
+        let isMotorStopped = false
+
         const shortChart = new ApexCharts(document.querySelector("#shortchart"), shortChartOptions)
         const totalChart = new ApexCharts(document.querySelector("#totalchart"), options)
         const socket = new WebSocket('ws://localhost:4200')
@@ -85,6 +93,7 @@
 
         const nodeStatusBackground = document.getElementById('node-status-background')
         const nodeStatusPoint = document.getElementById('node-status')
+        const motorStatus = document.getElementById('motor-status')
 
         let nodeStatus = true
         const chartData = []
@@ -127,9 +136,11 @@
                 }
 
                 if (subevent === 'continuous-data') {
-                    const value = parseFloat(payload)
+                    const analogValue = payload.split('/')[0]
+                    const socket_id = payload.split('/')[1]
+                    const value = parseFloat(analogValue)
 
-                    if (!isNaN(value)) {
+                    if (!isNaN(value) && socket_id === node_name) {
                         if (shortChartData.length >= maxDataPoints) {
                             shortChartData.shift()
                         }
@@ -167,15 +178,21 @@
         }
 
         const clockwise = () => {
+            isMotorStopped = false
             socket.send(`direction:clockwise:${node_name}`)
+            motorStatus.innerHTML = `🟢`
         }
 
         const anticlockwise = () => {
+            isMotorStopped = false
             socket.send(`direction:anticlockwise:${node_name}`)
+            motorStatus.innerHTML = `🟢`
         }
 
         const stopmotor = () => {
+            isMotorStopped = true
             socket.send(`stop-motor:true:${node_name}`)
+            motorStatus.innerHTML = `🔴`
         }
 
         const container = document.getElementById('container')
