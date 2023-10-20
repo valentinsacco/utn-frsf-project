@@ -103,11 +103,14 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
       connectedToServer = false;
       break;
     case WStype_CONNECTED:
-      Serial.println("Connected to WebSocket server");
-      connectedToServer = true;
-      String initialMotorStatus = String("initial-status:motor:") + (motorWorking ? "true" : "false") + String("/") + String(nodeName);
-      webSocket.sendTXT(initialMotorStatus);
-      break;
+      {
+        Serial.println("Connected to WebSocket server");
+        connectedToServer = true;
+        String initialMotorStatus;
+        initialMotorStatus = String("initial-status:motor:") + (motorWorking ? "true" : "false") + String("/") + String(nodeName);
+        webSocket.sendTXT(initialMotorStatus);
+        break;
+      }
     case WStype_TEXT:
       handleWebSocketConnection((char*)payload);
       break;
