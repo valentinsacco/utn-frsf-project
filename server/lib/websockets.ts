@@ -176,14 +176,29 @@ export const websockets = (server: ServerType) => {
 
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
-                    await prisma.node.update({
+                    const existNode = await prisma.node.findUnique({
                         where: {
                             name: socket_id
-                        },
-                        data: {
-                            status: true
                         }
                     })
+
+                    if (existNode) {
+                        await prisma.node.update({
+                            where: {
+                                name: socket_id
+                            },
+                            data: {
+                                status: true
+                            }
+                        })
+                    } else {
+                        await prisma.node.create({
+                            data: {
+                                name: socket_id,
+                                status: true
+                            }
+                        })
+                    }
                 }
 
                 ws.clients.forEach((client) => {

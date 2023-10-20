@@ -9,6 +9,8 @@ services:
       - mysql
     links:
       - mysql
+    networks:
+      - nodes-network
     ports:
       - "4200:4200"
   mysql: 
@@ -19,6 +21,8 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - nodes-network
     ports:
       - "3306:3306"
   shadow-db:
@@ -29,5 +33,10 @@ services:
       MYSQL_DATABASE: ${SHADOW_MYSQL_DATABASE}
       MYSQL_USER: ${SHADOW_MYSQL_USER}
       MYSQL_PASSWORD: ${SHADOW_MYSQL_PASSWORD}
+    networks:
+      - nodes-network
     ports:
       - "3307:3306"
+
+networks:
+  nodes-network:

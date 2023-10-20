@@ -10,6 +10,7 @@ COPY . .
 
 # EXPOSE 4200
 
+RUN npx prisma generate
 RUN npm run build
 
 CMD ["npm", "start"]
