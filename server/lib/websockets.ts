@@ -5,13 +5,6 @@ import prisma from './prisma'
 
 const pingIntervalTime = 500
 const savedValues: number[] = []
-const maxValues = 100
-
-// enum NodeState {
-//     ONLINE = 'online',
-//     OFFLINE = 'offline',
-//     UNKNOWN = 'unknown'
-// }
 
 enum SocketType {
     NODE = 'node',
@@ -21,8 +14,6 @@ enum SocketType {
 interface CustomWebSocket extends WebSocket {
     socket_id: string
 }
-
-// const db = new Map<string, NodeState>()
 
 export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
@@ -134,7 +125,7 @@ export const websockets = (server: ServerType) => {
                     }
                 })
 
-                if (existNode) {
+                if (!!existNode) {
                     await prisma.node.update({
                         where: {
                             name: node_name
@@ -182,7 +173,7 @@ export const websockets = (server: ServerType) => {
                         }
                     })
 
-                    if (existNode) {
+                    if (!!existNode) {
                         await prisma.node.update({
                             where: {
                                 name: socket_id
