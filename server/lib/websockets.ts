@@ -3,7 +3,7 @@ import WebSocket, { Server, OPEN } from 'ws'
 
 import prisma from './prisma'
 
-const pingIntervalTime = 500
+const pingIntervalTime = 1000
 const savedValues: number[] = []
 
 enum SocketType {
@@ -35,29 +35,49 @@ export const websockets = (server: ServerType) => {
                     Date.now() - ping_time > pingIntervalTime &&
                     last_pong_time === pong_time
                 ) {
+                    console.log(Date.now() - ping_time > pingIntervalTime)
+                    console.log(Date.now())
+                    console.log(ping_time)
+                    console.log(last_pong_time)
+                    console.log(pong_time)
+
                     if (node_name) {
-                        await prisma.node.update({
-                            where: {
-                                name: node_name
-                            },
-                            data: {
-                                status: false
+                        try {
+                            await prisma.node.update({
+                                where: {
+                                    name: node_name
+                                },
+                                data: {
+                                    status: false
+                                }
+                            })
+                        } catch (error) {
+                            if (error instanceof Error) {
+                                console.log(error.message)
                             }
-                        })
+                            console.log(error)
+                        }
                     }
 
                     console.log(`🙁 [server]: Nodo ${node_name} desconectado`)
 
-                    const nodes = await prisma.node.findMany()
-                    ws.clients.forEach((client) => {
-                        if (client.readyState === OPEN) {
-                            client.send(
-                                `client:status:${JSON.stringify(nodes)}`
-                            )
+                    try {
+                        const nodes = await prisma.node.findMany()
+                        ws.clients.forEach((client) => {
+                            if (client.readyState === OPEN) {
+                                client.send(
+                                    `client:status:${JSON.stringify(nodes)}`
+                                )
+                            }
+                        })
+                        node_disconnected = true
+                        clearInterval(pingInterval)
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
                         }
-                    })
-                    node_disconnected = true
-                    clearInterval(pingInterval)
+                        console.log(error)
+                    }
                 } else {
                     ping_time = Date.now()
                     socket.ping()
@@ -102,15 +122,22 @@ export const websockets = (server: ServerType) => {
                     socket_type = SocketType.CLIENT
                     console.log('🎉 [server]: Nuevo cliente conectado')
 
-                    const nodes = await prisma.node.findMany()
+                    try {
+                        const nodes = await prisma.node.findMany()
 
-                    ws.clients.forEach((client) => {
-                        if (client.readyState === OPEN) {
-                            client.send(
-                                `client:status:${JSON.stringify(nodes)}`
-                            )
+                        ws.clients.forEach((client) => {
+                            if (client.readyState === OPEN) {
+                                client.send(
+                                    `client:status:${JSON.stringify(nodes)}`
+                                )
+                            }
+                        })
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
                         }
-                    })
+                        console.log(error)
+                    }
                 }
             }
 
@@ -118,44 +145,58 @@ export const websockets = (server: ServerType) => {
                 node_name = data
                 socket.socket_id = node_name
                 console.log(`🎉 [server]: Nodo ${node_name} conectado`)
-
-                const existNode = await prisma.node.findUnique({
-                    where: {
-                        name: node_name
-                    }
-                })
-
-                if (!!existNode) {
-                    await prisma.node.update({
+                
+                try {
+                    const existNode = await prisma.node.findUnique({
                         where: {
                             name: node_name
-                        },
-                        data: {
-                            status: true
                         }
                     })
-                } else {
-                    await prisma.node.create({
-                        data: {
-                            name: node_name,
-                            status: true
-                        }
-                    })
-                }
 
-                const nodes = await prisma.node.findMany()
-
-                ws.clients.forEach((client) => {
-                    if (client.readyState === OPEN) {
-                        client.send(`client:status:${JSON.stringify(nodes)}`)
+                    if (!!existNode) {
+                        await prisma.node.update({
+                            where: {
+                                name: node_name
+                            },
+                            data: {
+                                status: true
+                            }
+                        })
+                    } else {
+                        await prisma.node.create({
+                            data: {
+                                name: node_name,
+                                status: true
+                            }
+                        })
                     }
-                })
+
+                    const nodes = await prisma.node.findMany()
+
+                    ws.clients.forEach((client) => {
+                        if (client.readyState === OPEN) {
+                            client.send(`client:status:${JSON.stringify(nodes)}`)
+                        }
+                    }) 
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.log(error.message)
+                    }
+                    console.log(error)
+                }
             }
 
             if (event === 'get-nodes') {
-                const nodes = await prisma.node.findMany()
+                try {
+                    const nodes = await prisma.node.findMany()
 
-                socket.send(`client:nodes:${JSON.stringify(nodes)}`)
+                    socket.send(`client:nodes:${JSON.stringify(nodes)}`)
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.log(error.message)
+                    }
+                    console.log(error)
+                }
             }
 
             if (event === 'state-change') {
@@ -167,38 +208,45 @@ export const websockets = (server: ServerType) => {
 
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
-                    const existNode = await prisma.node.findUnique({
-                        where: {
-                            name: socket_id
-                        }
-                    })
-
-                    if (!!existNode) {
-                        await prisma.node.update({
+                    try {
+                        const existNode = await prisma.node.findUnique({
                             where: {
                                 name: socket_id
-                            },
-                            data: {
-                                status: true
                             }
                         })
-                    } else {
-                        await prisma.node.create({
-                            data: {
-                                name: socket_id,
-                                status: true
-                            }
-                        })
+                    
+                        if (!!existNode) {
+                            await prisma.node.update({
+                                where: {
+                                    name: socket_id
+                                },
+                                data: {
+                                    status: true
+                                }
+                            })
+                        } else {
+                            await prisma.node.create({
+                                data: {
+                                    name: socket_id,
+                                    status: true
+                                }
+                            })
+                        } 
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
+                        }
+                        console.log(error)
                     }
-                }
 
-                ws.clients.forEach((client) => {
-                    if (client !== socket && client.readyState === OPEN) {
-                        client.send(
-                            `client:continuous-data:${data}/${socket_id}`
-                        )
-                    }
-                })
+                    ws.clients.forEach((client) => {
+                        if (client !== socket && client.readyState === OPEN) {
+                            client.send(
+                                `client:continuous-data:${data}/${socket_id}`
+                            )
+                        }
+                    })
+                }
             }
 
             if (event === 'direction') {
