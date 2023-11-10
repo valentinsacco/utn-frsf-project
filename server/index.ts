@@ -9,14 +9,6 @@ const app: Express = express()
 
 const server = createServer(app)
 
-enum NodeState {
-    ONLINE = 'online',
-    OFFLINE = 'offline',
-    UNKNOWN = 'unknown'
-}
-
-// const db = new Map<string, NodeState>()
-
 app.set('port', process.env.PORT || 4200)
 app.engine('hbs', engine({ extname: '.hbs', defaultLayout: 'main' }))
 app.set('view engine', 'hbs')
@@ -30,7 +22,6 @@ app.get('/', (_, res) => {
 app.get('/node/:node_name', (req, res) => {
     const { node_name } = req.params
 
-    // Check if node exists in db
     res.render('node', { node_name, db: [] })
 })
 
