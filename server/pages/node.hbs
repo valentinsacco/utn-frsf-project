@@ -1,92 +1,31 @@
 {{#> layout}}
     <div id="container" class='px-20 py-10'>
-        <div class='flex flex-row gap-2 items-center mb-6'>
+        <div class='flex flex-row items-center gap-2 mb-6'>
             <div
                 id='node-status-background'
                 class='h-3.5 w-3.5 rounded-full bg-emerald-200 grid place-items-center'
             >
                 <div
                     id='node-status'
-                    class='h-2 w-2 rounded-full bg-emerald-500'
+                    class='w-2 h-2 rounded-full bg-emerald-500'
                 ></div>
             </div>
-            <h1 id='node-name' class='text-gray-800 text-xl capitalize'></h1>
+            <h1 id='node-name' class='text-xl text-gray-800 capitalize'></h1>
         </div>
        <div>
             <div class='flex flex-row items-center mt-4 mb-2'>
-                <h2 class='font-medium text-lg text-gray-600'>Motor</h2>
+                <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
                 <div class='ml-2' id='motor-status'>🔴</div>
             </div>
-            <button onclick="clockwise()" class='h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Agujas Del Reloj</button>
-            <button onclick="anticlockwise()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Sentido Contrario Agujas Del Reloj</button>
-            <button onclick="stopmotor()" class='ml-4 h-11 px-4 text-gray-600 rounded-md bg-gray-200 cursor-pointer'>Parar Motor</button>
+            <button onclick="clockwise()" class='px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Agujas Del Reloj</button>
+            <button onclick="anticlockwise()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Contrario Agujas Del Reloj</button>
+            <button onclick="stopmotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
        </div>
-        <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de 50 [segundos]:</h2>
-        <div id="shortchart"></div>
-        <h2 class='font-medium text-lg text-gray-600 mt-4 mb-2'>Gráfico de todos los valores tomados:</h2>
-        <div id="totalchart"></div>
+            <h2 class='mt-4 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
+            <div id='lwc'></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://unpkg.com/lightweight-charts@3.4.0/dist/lightweight-charts.standalone.production.js"></script>
     <script>
-        let options = {
-            series: [],
-            chart: {
-                height: 350,
-                type: 'area',
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 800,
-                    animateGradually: {
-                        enabled: false,
-                        delay: 150
-                    },
-                    dynamicAnimation: {
-                        enabled: true
-                    }
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth'
-            },
-            xaxis: {
-                type: 'datetime',
-            },
-            yaxis: {
-                min: 1,
-                max: 1024,
-            },
-            tooltip: {
-                x: {
-                    format: 'dd/MM/yy HH:mm'
-                },
-            },
-            noData: {
-                text: 'No hay datos disponibles'
-            }
-        }
-
-        const shortChartOptions = { ...options, chart: {
-                height: 350,
-                type: 'area',
-                animations: {
-                    dynamicAnimation: {
-                        enabled: false,
-                    }
-                }
-            } 
-        }
-
-        let isMotorStopped = false
-
-        const shortChart = new ApexCharts(document.querySelector("#shortchart"), shortChartOptions)
-        const totalChart = new ApexCharts(document.querySelector("#totalchart"), options)
-        const socket = new WebSocket('ws://localhost:4200')
-        // const socket = new WebSocket('ws://iphost:4200') // Cambiar este valor por la IP del servidor
-
         const node_name = window.location.pathname.replace('/node/', '')
         const nodeNameH1 = document.getElementById('node-name')
         nodeNameH1.innerText = node_name
@@ -99,6 +38,50 @@
         const chartData = []
         const shortChartData = []
         const maxDataPoints = 100
+
+        const chart = LightweightCharts.createChart(document.getElementById('lwc'), {
+            height: 400,
+            layout: {
+            	textColor: '#d1d4dc',
+            	backgroundColor: '#00000000'
+            },
+            rightPriceScale: {
+            	scaleMargins: {
+            		top: 0.3,
+            		bottom: 0.25,
+            	},
+            },
+            crosshair: {
+            	vertLine: {
+            		width: 5,
+            		color: 'rgba(224, 227, 235, 0.1)',
+            		style: 0,
+            	},
+            	horzLine: {
+            		visible: false,
+            		labelVisible: false,
+            	},
+            },
+            grid: {
+            	vertLines: {
+            		color: 'rgba(42, 46, 57, 0)',
+            	},
+            	horzLines: {
+            		color: 'rgba(42, 46, 57, 0)',
+            	},
+            },
+        }) 
+
+        const areaChart = chart.addAreaSeries({
+            topColor: 'rgba(38, 198, 218, 0.56)',
+            bottomColor: 'rgba(38, 198, 218, 0.04)',
+            //  lineColor: 'rgba(38, 198, 218, 1)',
+            lineColor: '#eb4034',
+            lineWidth: 2,
+            crossHairMarkerVisible: false,
+        })
+
+        const socket = new WebSocket('ws://localhost:4200')
 
         socket.onopen = () => {
             console.log('🎉 WS Connected')
@@ -115,10 +98,8 @@
 
             if (event === 'client') {
                 const subevent = data
-
                 if (subevent === 'status') {
                     const parsed = JSON.parse(payload)
-
                     if (Array.isArray(parsed)) {
                         parsed.forEach(node => {
                             // '🟢' : '🔴'
@@ -139,65 +120,18 @@
                     const analogValue = payload.split('/')[0]
                     const socket_id = payload.split('/')[1]
                     const value = parseFloat(analogValue)
-
                     if (!isNaN(value) && socket_id === node_name) {
                         if (shortChartData.length >= maxDataPoints) {
                             shortChartData.shift()
                         }
-
-                        chartData.push({
-                            x: new Date().getTime(),
-                            y: value
+                        
+                        areaChart.update({
+                            time: new Date().getTime(),
+                            value: value
                         })
-
-                        shortChartData.push({
-                            x: new Date().getTime(),
-                            y: value
-                        })
-
-                        shortChart.updateSeries([{
-                            name: node_name,
-                            data: shortChartData
-                        }])
-
-                        totalChart.updateSeries([{
-                            name: node_name,
-                            data: chartData
-                        }])
                     }
                 }
-                // const parsed_data = JSON.parse(data)
-                // const { node, value } = parsed_data
-
-                // if (node === node_name) {
-                //     const new_data = chart.w.globals.series[0].data.slice(1)
-                //     new_data.push(value)
-                //     chart.updateSeries([{ data: new_data }])
-                // }
             }
         }
-
-        const clockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:clockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
-        }
-
-        const anticlockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:anticlockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
-        }
-
-        const stopmotor = () => {
-            isMotorStopped = true
-            socket.send(`stop-motor:true:${node_name}`)
-            motorStatus.innerHTML = `🔴`
-        }
-
-        const container = document.getElementById('container')
-
-        shortChart.render()
-        totalChart.render()
     </script>
 {{/layout}}
