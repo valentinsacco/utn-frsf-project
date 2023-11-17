@@ -295,6 +295,12 @@ export const websockets = (server: ServerType) => {
                     }
                 })
             }
+
+            if (event === 'start-measure') {
+                const socket_id = payload
+
+                console.log(socket_id)
+            }
         })
 
         socket.on('error', (error) => {

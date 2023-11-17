@@ -19,13 +19,16 @@
             </div>
             <button onclick="clockwise()" class='px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Agujas Del Reloj</button>
             <button onclick="anticlockwise()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Contrario Agujas Del Reloj</button>
-            <button onclick="stopmotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
+            <button onclick="stopMotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
        </div>
-            <h2 class='mt-4 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
+            <button onclick="startMeasure()" class='mb-2 mt-4'>Empezar Medición</button>
+            <h2 class='mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
             <div id='lwc'></div>
     </div>
     <script src="https://unpkg.com/lightweight-charts@3.4.0/dist/lightweight-charts.standalone.production.js"></script>
     <script>
+        const socket = new WebSocket('ws://localhost:4200')
+        
         const node_name = window.location.pathname.replace('/node/', '')
         const nodeNameH1 = document.getElementById('node-name')
         nodeNameH1.innerText = node_name
@@ -33,13 +36,15 @@
         const nodeStatusBackground = document.getElementById('node-status-background')
         const nodeStatusPoint = document.getElementById('node-status')
         const motorStatus = document.getElementById('motor-status')
+        const lwc = document.getElementById('lwc')
 
+        let isMotorStopped = false
         let nodeStatus = true
-        const chartData = []
-        const shortChartData = []
-        const maxDataPoints = 100
+        const toolTipWidth = 80
+        const toolTipHeight = 80
+        const toolTipMargin = 15
 
-        const chart = LightweightCharts.createChart(document.getElementById('lwc'), {
+        const chart = LightweightCharts.createChart(lwc, {
             height: 400,
             layout: {
             	textColor: '#d1d4dc',
@@ -75,13 +80,71 @@
         const areaChart = chart.addAreaSeries({
             topColor: 'rgba(38, 198, 218, 0.56)',
             bottomColor: 'rgba(38, 198, 218, 0.04)',
-            //  lineColor: 'rgba(38, 198, 218, 1)',
-            lineColor: '#eb4034',
+            lineColor: 'rgba(38, 198, 218, 1)',
             lineWidth: 2,
             crossHairMarkerVisible: false,
         })
 
-        const socket = new WebSocket('ws://localhost:4200')
+        areaChart.setData([])
+
+        const toolTip = document.createElement('div')
+        toolTip.style = `width: 96px; height: 80px; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 12px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 2px;font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;`
+        toolTip.style.background = 'rgba(38, 198, 218, 0.2)'
+        toolTip.style.color = 'black'
+        // toolTip.style.borderColor = '#eb4034'
+        toolTip.style.borderColor = 'rgba(38, 198, 218, 1)'
+        lwc.appendChild(toolTip)
+
+        let startTime = null
+
+        chart.subscribeCrosshairMove(param => {
+            if (
+                param.point === undefined ||
+                !param.time ||
+                param.point.x < 0 ||
+                param.point.x > lwc.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > lwc.clientHeight
+            ) {
+                toolTip.style.display = 'none'
+            } else {
+                const dateStr = param.time
+                if (!startTime) {
+                    startTime = dateStr
+                }
+                const time = dateStr - startTime
+                const seconds = Math.floor(time / 1000)
+                const minutes = Math.floor(seconds / 60)
+
+                const timeToShow = seconds < 60 ? `${seconds} sec` : `${minutes} min`
+
+                toolTip.style.display = 'block'
+                const value = param.seriesPrices.get(areaChart)
+                toolTip.innerHTML = `<div style="color: ${'rgba(255, 82, 82, 1)'}">${'A0'}</div><div style="font-size: 24px; margin: 0px; color: ${'black'}">
+                    ${value}
+                    </div><div style="color: ${'black'}">
+                    ${timeToShow}
+                    </div>`
+
+                const y = param.point.y + 272 // 272 is the offset of the chart
+                let left = param.point.x + toolTipMargin
+                if (left > lwc.clientWidth - toolTipWidth) {
+                    left = param.point.x - toolTipMargin - toolTipWidth
+                }
+
+                let top
+                // if (top - 272 > lwc.clientHeight - toolTipHeight) {
+                //     top = y - toolTipHeight - toolTipMargin
+                // }
+
+                // console.log(y)
+                // console.log(lwc.clientHeight - toolTipHeight)
+
+                top = y - toolTipHeight - toolTipMargin
+                toolTip.style.left = left + 'px'
+                toolTip.style.top = top + 'px'
+            }
+        })
 
         socket.onopen = () => {
             console.log('🎉 WS Connected')
@@ -121,10 +184,6 @@
                     const socket_id = payload.split('/')[1]
                     const value = parseFloat(analogValue)
                     if (!isNaN(value) && socket_id === node_name) {
-                        if (shortChartData.length >= maxDataPoints) {
-                            shortChartData.shift()
-                        }
-                        
                         areaChart.update({
                             time: new Date().getTime(),
                             value: value
@@ -132,6 +191,29 @@
                     }
                 }
             }
+        }
+
+        const clockwise = () => {
+            isMotorStopped = false
+            socket.send(`direction:clockwise:${node_name}`)
+            motorStatus.innerHTML = `🟢`
+        }
+
+        const anticlockwise = () => {
+            isMotorStopped = false
+            socket.send(`direction:anticlockwise:${node_name}`)
+            motorStatus.innerHTML = `🟢`
+        }
+
+        const stopMotor = () => {
+            isMotorStopped = true
+            socket.send(`stop-motor:true:${node_name}`)
+            motorStatus.innerHTML = `🔴`
+        }
+
+        const startMeasure = () => {
+            // socket.send(`type:server;client:${node_name};event:continuous-data`)
+            socket.send(`start-measure:true:${node_name}`)
         }
     </script>
 {{/layout}}
