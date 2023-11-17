@@ -10,5 +10,9 @@
 # Server Logs
 /server/set-online-nodes.png
 
+# Server Database
+/server/prisma/dev.db
+/server/prisma/dev.db-journal
+
 # MSTeams Changes
 v*.txt

@@ -16,3 +16,24 @@ model Node {
 
   @@index([name], name: "name")
 }
+
+// Do migrations
+// https://prismaliser.app?code=ZGF0YXNvdXJjZSBkYiB7CiAgcHJvdmlkZXIgPSAic3FsaXRlIgogIHVybCAgICAgID0gZW52KCJEQVRBQkFTRV9VUkwiKQp9CgpnZW5lcmF0b3IgY2xpZW50IHsKICBwcm92aWRlciA9ICJwcmlzbWEtY2xpZW50LWpzIgp9Cgptb2RlbCBNZWFzdXJlIHsKICBpZCAgICAgICAgSW50ICAgICAgQGlkIEBkZWZhdWx0KGF1dG9pbmNyZW1lbnQoKSkKICB1c2VybmFtZSAgU3RyaW5nCiAgdmFsdWVzICAgIFZhbHVlW10KICB0aW1lc3RhbXAgRGF0ZVRpbWUgQGRlZmF1bHQobm93KCkpCn0KCm1vZGVsIFZhbHVlIHsKICBpZCAgICAgICAgSW50ICAgICAgQGlkIEBkZWZhdWx0KGF1dG9pbmNyZW1lbnQoKSkKICB2YWx1ZSAgICAgSW50ICAgICAgQGRlZmF1bHQoMCkKICB0aW1lc3RhbXAgRGF0ZVRpbWUgQGRlZmF1bHQobm93KCkpCiAgbWVhc3VyZUlkIEludAogIG1lYXN1cmUgICBNZWFzdXJlICBAcmVsYXRpb24oZmllbGRzOiBbbWVhc3VyZUlkXSwgcmVmZXJlbmNlczogW2lkXSkKfQo%3D
+
+model Measure {
+  id          Int      @id @default(autoincrement())
+  username    String
+  nodeName    String
+  values      Value[]
+  measureName String
+  readedPin   String
+  timestamp   DateTime @default(now())
+}
+
+model Value {
+  id        Int      @id @default(autoincrement())
+  value     Int      @default(0)
+  timestamp DateTime @default(now())
+  measureId Int
+  measure   Measure  @relation(fields: [measureId], references: [id])
+}

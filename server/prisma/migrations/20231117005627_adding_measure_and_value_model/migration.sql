@@ -1,0 +1,18 @@
+-- CreateTable
+CREATE TABLE "Measure" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "username" TEXT NOT NULL,
+    "nodeName" TEXT NOT NULL,
+    "measureName" TEXT NOT NULL,
+    "readedPin" TEXT NOT NULL,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Value" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "value" INTEGER NOT NULL DEFAULT 0,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "measureId" INTEGER NOT NULL,
+    CONSTRAINT "Value_measureId_fkey" FOREIGN KEY ("measureId") REFERENCES "Measure" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
