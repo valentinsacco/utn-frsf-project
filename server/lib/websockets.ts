@@ -26,6 +26,9 @@ export const websockets = (server: ServerType) => {
         let latency: number | undefined = undefined
         let node_disconnected: boolean = false
         let socket_type: string | null = null
+        let start_measuring: boolean = false
+        let socket_id_under_measure: string | undefined = undefined
+        let measure_id: number | undefined = undefined
 
         socket.send('type:server')
 
@@ -145,7 +148,7 @@ export const websockets = (server: ServerType) => {
                 node_name = data
                 socket.socket_id = node_name
                 console.log(`🎉 [server]: Nodo ${node_name} conectado`)
-                
+
                 try {
                     const existNode = await prisma.node.findUnique({
                         where: {
@@ -175,9 +178,11 @@ export const websockets = (server: ServerType) => {
 
                     ws.clients.forEach((client) => {
                         if (client.readyState === OPEN) {
-                            client.send(`client:status:${JSON.stringify(nodes)}`)
+                            client.send(
+                                `client:status:${JSON.stringify(nodes)}`
+                            )
                         }
-                    }) 
+                    })
                 } catch (error) {
                     if (error instanceof Error) {
                         console.log(error.message)
@@ -209,29 +214,18 @@ export const websockets = (server: ServerType) => {
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
                     try {
-                        const existNode = await prisma.node.findUnique({
-                            where: {
-                                name: socket_id
-                            }
-                        })
-                    
-                        if (!!existNode) {
-                            await prisma.node.update({
-                                where: {
-                                    name: socket_id
-                                },
+                        if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                            await prisma.value.create({
                                 data: {
-                                    status: true
+                                    value: parsedValue,
+                                    measure: {
+                                        connect: {
+                                            id: measure_id
+                                        }
+                                    }
                                 }
                             })
-                        } else {
-                            await prisma.node.create({
-                                data: {
-                                    name: socket_id,
-                                    status: true
-                                }
-                            })
-                        } 
+                        }
                     } catch (error) {
                         if (error instanceof Error) {
                             console.log(error.message)
@@ -297,9 +291,27 @@ export const websockets = (server: ServerType) => {
             }
 
             if (event === 'start-measure') {
-                const socket_id = payload
+                start_measuring = true
+                socket_id_under_measure = payload
+                // payload = 'socket_id; username; measure_name; readed_pin'
 
-                console.log(socket_id)
+                try {
+                    const measure = await prisma.measure.create({
+                        data: {
+                            username: 'test',
+                            measureName: 'test',
+                            nodeName: socket_id_under_measure,
+                            readedPin: 'A0',
+                        }
+                    })
+
+                    measure_id = measure.id
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.log(error.message)
+                    }
+                    console.log(error)
+                }
             }
         })
 
