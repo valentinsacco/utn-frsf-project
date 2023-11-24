@@ -3,8 +3,14 @@ import WebSocket, { Server, OPEN } from 'ws'
 
 import prisma from './prisma'
 
+interface MeasuredValue {
+    value: number
+    timestamp: string
+}
+
 const pingIntervalTime = 1000
 const savedValues: number[] = []
+const measuredValues: MeasuredValue[] = []
 
 enum SocketType {
     NODE = 'node',
@@ -17,18 +23,19 @@ interface CustomWebSocket extends WebSocket {
 
 export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
+    
+    let node_name: string | undefined = undefined
+    let ping_time: number = Date.now()
+    let pong_time: number | undefined = undefined
+    let last_pong_time: number | undefined = undefined
+    let latency: number | undefined = undefined
+    let node_disconnected: boolean = false
+    let socket_type: string | null = null
+    let start_measuring: boolean = false
+    let socket_id_under_measure: string | undefined = undefined
+    let measure_id: number | undefined = undefined
 
     ws.on('connection', (socket: CustomWebSocket) => {
-        let node_name: string | undefined = undefined
-        let ping_time: number = Date.now()
-        let pong_time: number | undefined = undefined
-        let last_pong_time: number | undefined = undefined
-        let latency: number | undefined = undefined
-        let node_disconnected: boolean = false
-        let socket_type: string | null = null
-        let start_measuring: boolean = false
-        let socket_id_under_measure: string | undefined = undefined
-        let measure_id: number | undefined = undefined
 
         socket.send('type:server')
 
@@ -38,12 +45,6 @@ export const websockets = (server: ServerType) => {
                     Date.now() - ping_time > pingIntervalTime &&
                     last_pong_time === pong_time
                 ) {
-                    console.log(Date.now() - ping_time > pingIntervalTime)
-                    console.log(Date.now())
-                    console.log(ping_time)
-                    console.log(last_pong_time)
-                    console.log(pong_time)
-
                     if (node_name) {
                         try {
                             await prisma.node.update({
@@ -213,25 +214,34 @@ export const websockets = (server: ServerType) => {
 
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
-                    try {
-                        if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
-                            await prisma.value.create({
-                                data: {
-                                    value: parsedValue,
-                                    measure: {
-                                        connect: {
-                                            id: measure_id
-                                        }
-                                    }
-                                }
-                            })
-                        }
-                    } catch (error) {
-                        if (error instanceof Error) {
-                            console.log(error.message)
-                        }
-                        console.log(error)
+                    if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                        measuredValues.push({
+                            value: parsedValue,
+                            timestamp: new Date().toISOString()
+                        })
                     }
+  
+                    // { socket_id: '001', values: [{ value: 0.5, timestamp: '10-11-23' }] }
+
+                    // try {
+                    //     if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                    //         await prisma.value.create({
+                    //             data: {
+                    //                 value: parsedValue,
+                    //                 measure: {
+                    //                     connect: {
+                    //                         id: measure_id
+                    //                     }
+                    //                 }
+                    //             }
+                    //         })
+                    //     }
+                    // } catch (error) {
+                    //     if (error instanceof Error) {
+                    //         console.log(error.message)
+                    //     }
+                    //     console.log(error)
+                    // }
 
                     ws.clients.forEach((client) => {
                         if (client !== socket && client.readyState === OPEN) {
@@ -290,27 +300,59 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
-            if (event === 'start-measure') {
-                start_measuring = true
-                socket_id_under_measure = payload
-                // payload = 'socket_id; username; measure_name; readed_pin'
+            if (event === 'measure') {
+                const measureStatus = data
+                const socket_id = payload
 
-                try {
-                    const measure = await prisma.measure.create({
-                        data: {
-                            username: 'test',
-                            measureName: 'test',
-                            nodeName: socket_id_under_measure,
-                            readedPin: 'A0',
+                if (measureStatus === 'true') {
+                    start_measuring = true
+                    socket_id_under_measure = socket_id
+                    // payload = 'socket_id; username; measure_name; readed_pin'
+    
+                    try {
+                        const measure = await prisma.measure.create({
+                            data: {
+                                username: 'test',
+                                measureName: 'test',
+                                nodeName: socket_id_under_measure,
+                                readedPin: 'A0',
+                            }
+                        })
+    
+                        measure_id = measure.id
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
                         }
-                    })
-
-                    measure_id = measure.id
-                } catch (error) {
-                    if (error instanceof Error) {
-                        console.log(error.message)
+                        console.log(error)
                     }
-                    console.log(error)
+                } else if (measureStatus === 'false') {
+                    start_measuring = false
+
+                    try {
+                        for (const value of measuredValues) {
+                            await prisma.value.create({
+                                data: {
+                                    value: value.value,
+                                    timestamp: value.timestamp,
+                                    measure: {
+                                        connect: {
+                                            id: measure_id
+                                        }
+                                    }
+                                }
+                            })
+                        }
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
+                        }
+                        console.log(error)
+                    }
+                    
+                    socket_id_under_measure = undefined
+                    measure_id = undefined
+                    measuredValues.length = 0
                 }
             }
         })

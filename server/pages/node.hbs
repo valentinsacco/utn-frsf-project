@@ -12,7 +12,7 @@
             </div>
             <h1 id='node-name' class='text-xl text-gray-800 capitalize'></h1>
         </div>
-       <div>
+        <div>
             <div class='flex flex-row items-center mt-4 mb-2'>
                 <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
                 <div class='ml-2' id='motor-status'>🔴</div>
@@ -20,10 +20,13 @@
             <button onclick="clockwise()" class='px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Agujas Del Reloj</button>
             <button onclick="anticlockwise()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Contrario Agujas Del Reloj</button>
             <button onclick="stopMotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
-       </div>
-            <button onclick="startMeasure()" class='mb-2 mt-4'>Empezar Medición</button>
-            <h2 class='mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
-            <div id='lwc'></div>
+        </div>
+        <div class="mt-6">
+            <h2 class='mb-2 text-lg font-medium text-gray-600'>Medición:</h2>
+            <button id="measure-btn" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">Empezar Medición</button>
+        </div>
+        <h2 class='mt-6 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
+        <div id='lwc'></div>
     </div>
     <script src="https://unpkg.com/lightweight-charts@3.4.0/dist/lightweight-charts.standalone.production.js"></script>
     <script>
@@ -37,9 +40,11 @@
         const nodeStatusPoint = document.getElementById('node-status')
         const motorStatus = document.getElementById('motor-status')
         const lwc = document.getElementById('lwc')
+        const measureBtn = document.getElementById('measure-btn')
 
         let isMotorStopped = false
         let nodeStatus = true
+        let isMeasureActive = false
         const toolTipWidth = 80
         const toolTipHeight = 80
         const toolTipMargin = 15
@@ -211,9 +216,16 @@
             motorStatus.innerHTML = `🔴`
         }
 
-        const startMeasure = () => {
-            // socket.send(`type:server;client:${node_name};event:continuous-data`)
-            socket.send(`start-measure:true:${node_name}`)
-        }
+        measureBtn.addEventListener('click', () => {
+            if (!isMeasureActive) {
+                socket.send(`measure:true:${node_name}`)
+                isMeasureActive = true
+                measureBtn.innerHTML = 'Parar Medición'
+            } else {
+                socket.send(`measure:false:${node_name}`)
+                isMeasureActive = false
+                measureBtn.innerHTML = 'Empezar Medición'
+            }
+        })
     </script>
 {{/layout}}
