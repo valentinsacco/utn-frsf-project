@@ -1,0 +1,61 @@
+{{!-- [
+  {
+    id: 38,
+    username: 'test',
+    nodeName: 'planta-002',
+    readedPin: 'A0',
+    timestamp: 2023-11-24T14:06:16.840Z
+  }
+] --}}
+
+{{#> layout}}
+    <div class='px-20 py-10 grid place-items-center'>
+        <div>
+            <h1 class="mb-4">Mediciones:</h1>
+            <ul id='measures' class="flex flex-col gap-2 w-[450px]">
+                {{#each measures}}
+                    <li class="h-12 w-96 px-4 flex flex-row justify-between items-center bg-white rounded-md">
+                        <h3>{{this.nodeName}}</h3>
+                        <span id="timestamp" class="w-40 line-clamp-1">{{this.timestamp}}</span>
+                    </li>
+                {{/each}}
+            </ul>
+        </div>
+    </div>
+    <script>
+        const timestampSpan = document.getElementById('timestamp')
+
+        const fetchMeasures = async () => {
+            const res = await fetch('/api/measures')
+            const measures = await res.json()
+
+            if (measures.success) {
+                measures.response.forEach(measure => {
+                    // timestampSpan.innerHTML = formatDate(new Date(measure.timestamp))
+
+                    const date = formatDate(measure.timestamp)
+                    console.log(date)
+                })
+            } else {
+                console.log(measures.message)
+            }
+        }
+
+        fetchMeasures()
+
+        // const formatDate = (date: string) => {
+        //     const dateToString = date
+// 
+        //     console.log(date)
+// 
+        //     const year = dateToString.split('-')[1]
+        //     const month = dateToString.split('-')[2]
+        //     const dayAndTime = dateToString.split('-')[3]
+        //     const day = dayAndTime.split('T')[0]
+        //     const hour = dayAndTime.split('T')[1].split(':')[0]
+        //     const minutes = dayAndTime.split('T')[1].split(':')[1]
+        //     
+        //     return `${day}/${month}/${year} ${hour}:${minutes}`
+        // }
+    </script>
+{{/layout}}
