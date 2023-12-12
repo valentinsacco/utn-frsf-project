@@ -1,28 +1,19 @@
-{{!-- [
-  {
-    id: 38,
-    username: 'test',
-    nodeName: 'planta-002',
-    readedPin: 'A0',
-    timestamp: 2023-11-24T14:06:16.840Z
-  }
-] --}}
-
 {{#> layout}}
     <div class='px-20 py-10 grid place-items-center'>
         <div>
-            <h1 class="mb-4">Mediciones:</h1>
-            <ul id='measures' class="flex flex-col gap-2 w-[450px]">
-                {{#each measures}}
-                    <li class="h-12 w-96 px-4 flex flex-row justify-between items-center bg-white rounded-md">
-                        <h3>{{this.nodeName}}</h3>
-                        <span id="timestamp" class="w-40 line-clamp-1">{{this.timestamp}}</span>
-                    </li>
-                {{/each}}
-            </ul>
+            <div class="mb-4 flex flex-row items-center justify-between">
+                <a href="/" class="z-40">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.5 16.5999L7.06667 11.1666C6.425 10.5249 6.425 9.4749 7.06667 8.83324L12.5 3.3999" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <h1 class="font-semibold text-lg text-center w-full -ml-5 z-0">Mediciones</h1>
+            </div> 
+            <ul id='measures' class="flex flex-col gap-2 w-96"></ul>
         </div>
     </div>
     <script>
+        const measuresContainer = document.getElementById('measures')
         const timestampSpan = document.getElementById('timestamp')
 
         const fetchMeasures = async () => {
@@ -31,10 +22,32 @@
 
             if (measures.success) {
                 measures.response.forEach(measure => {
-                    // timestampSpan.innerHTML = formatDate(new Date(measure.timestamp))
-
-                    const date = formatDate(measure.timestamp)
-                    console.log(date)
+                    measuresContainer.innerHTML += `
+                        <li class="h-20 w-96 px-4 flex flex-row justify-between items-center bg-white rounded-md">
+                            <div class='w-3/4'>
+                                <h3 class="mb-1 capitalize">${measure.nodeName}</h3>
+                                <span id="timestamp" class="w-full line-clamp-1">${measure.timestamp}</span>
+                            </div>
+                            <div class="flex flex-row gap-2 w-1/4 items-center justify-end">
+                                <button onclick="downloadMeasure(${measure.id})">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M10 1.66663V16.6666L15 11.6666" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M10 16.6666L5 11.6666" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M15 18.3334H5" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <button onclick="deleteMeasure(${measure.id})">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M7.08333 4.14163L7.26666 3.04996C7.4 2.25829 7.49999 1.66663 8.90833 1.66663H11.0917C12.5 1.66663 12.6083 2.29163 12.7333 3.05829L12.9167 4.14163" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M15.7083 7.6167L15.1667 16.0084C15.075 17.3167 15 18.3334 12.675 18.3334H7.32499C4.99999 18.3334 4.92499 17.3167 4.83332 16.0084L4.29166 7.6167" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M8.60834 13.75H11.3833" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M7.91667 10.4166H12.0833" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </li>
+                    `
                 })
             } else {
                 console.log(measures.message)
@@ -43,19 +56,24 @@
 
         fetchMeasures()
 
-        // const formatDate = (date: string) => {
-        //     const dateToString = date
-// 
-        //     console.log(date)
-// 
-        //     const year = dateToString.split('-')[1]
-        //     const month = dateToString.split('-')[2]
-        //     const dayAndTime = dateToString.split('-')[3]
-        //     const day = dayAndTime.split('T')[0]
-        //     const hour = dayAndTime.split('T')[1].split(':')[0]
-        //     const minutes = dayAndTime.split('T')[1].split(':')[1]
-        //     
-        //     return `${day}/${month}/${year} ${hour}:${minutes}`
-        // }
+        const downloadMeasure = async (measure_id) => {
+            const res = await fetch(`/api/measures/download/${measure_id}`)
+
+            const contentDisposition = res.headers.get('content-disposition')
+
+            const filename = contentDisposition.split(';')[1].split('=')[1].replace(/"/g, '')
+
+            res.blob().then(blob => {
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+            })
+        }
+
+        const deleteMeasure = async (measure_id) => {} // Todavía no está implementado
     </script>
 {{/layout}}

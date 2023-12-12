@@ -1,21 +1,30 @@
 Arguments: 
-  /usr/bin/node /usr/local/bin/yarn add --dev prisma@latest
+  C:\Program Files\nodejs\node.exe C:\Users\Valentin Sacco\AppData\Roaming\npm\node_modules\yarn\bin\yarn.js add --dev @types/json2xls
 
 PATH: 
-  /home/usuario/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
+  C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\Program Files\Git\cmd;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Intel\WiFi\bin\;C:\Program Files\Common Files\Intel\WirelessCommon\;C:\Program Files\dotnet\;C:\Program Files\nodejs\;C:\Program Files\Docker\Docker\resources\bin;C:\Users\Valentin Sacco\scoop\shims;C:\Users\Valentin Sacco\.console-ninja\.bin;C:\Users\Valentin Sacco\.cargo\bin;C:\Users\Valentin Sacco\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\Valentin Sacco\AppData\Local\Programs\Python\Python310\;C:\Users\Valentin Sacco\AppData\Local\Programs\Python\Python39\Scripts\;C:\Users\Valentin Sacco\AppData\Local\Programs\Python\Python39\;C:\Users\Valentin Sacco\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Valentin Sacco\AppData\Local\Microsoft\WindowsApps;C:\Program Files\heroku\bin;C:\Users\Valentin Sacco\AppData\Local\Programs\Hyper\resources\bin;C:\Users\Valentin Sacco\AppData\Roaming\npm;C:\Users\Valentin Sacco\.fly\bin;C:\Program Files (x86)\MongoDB Atlas CLI\
 
 Yarn version: 
   1.22.19
 
 Node version: 
-  18.17.1
+  16.14.2
 
 Platform: 
-  linux arm64
+  win32 x64
 
 Trace: 
-  Error: getaddrinfo EAI_AGAIN registry.yarnpkg.com
-      at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:108:26)
+  Error: https://registry.yarnpkg.com/@types%2fjson2xls: Not found
+      at Request.params.callback [as _callback] (C:\Users\Valentin Sacco\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:66145:18)
+      at Request.self.callback (C:\Users\Valentin Sacco\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:140890:22)
+      at Request.emit (node:events:526:28)
+      at Request.<anonymous> (C:\Users\Valentin Sacco\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141862:10)
+      at Request.emit (node:events:526:28)
+      at IncomingMessage.<anonymous> (C:\Users\Valentin Sacco\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141784:12)
+      at Object.onceWrapper (node:events:645:28)
+      at IncomingMessage.emit (node:events:538:35)
+      at endReadableNT (node:internal/streams/readable:1345:12)
+      at processTicksAndRejections (node:internal/process/task_queues:83:21)
 
 npm manifest: 
   {
@@ -27,9 +36,10 @@ npm manifest:
     "license": "MIT",
     "private": true,
     "dependencies": {
-      "@prisma/client": "^5.4.2",
+      "@prisma/client": "^5.5.2",
       "express": "^4.18.2",
       "express-handlebars": "^7.1.2",
+      "json2xls": "^0.1.2",
       "ws": "^8.13.0"
     },
     "devDependencies": {
@@ -38,7 +48,7 @@ npm manifest:
       "@types/ws": "^8.5.5",
       "concurrently": "^8.1.0",
       "nodemon": "^2.0.22",
-      "prisma": "^5.4.2",
+      "prisma": "^5.5.2",
       "tailwindcss": "^3.3.3",
       "typescript": "^5.0.4"
     },
@@ -139,22 +149,22 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
     integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
   
-  "@prisma/client@^5.4.2":
-    version "5.4.2"
-    resolved "https://registry.yarnpkg.com/@prisma/client/-/client-5.4.2.tgz#786f9c1d8f06d955933004ac638d14da4bf14025"
-    integrity sha512-2xsPaz4EaMKj1WS9iW6MlPhmbqtBsXAOeVttSePp8vTFTtvzh2hZbDgswwBdSCgPzmmwF+tLB259QzggvCmJqA==
+  "@prisma/client@^5.5.2":
+    version "5.5.2"
+    resolved "https://registry.yarnpkg.com/@prisma/client/-/client-5.5.2.tgz#ce6389e7ad9e9cf0fc2a7c6a0032ad2e12a9fd61"
+    integrity sha512-54XkqR8M+fxbzYqe+bIXimYnkkcGqgOh0dn0yWtIk6CQT4IUCAvNFNcQZwk2KqaLU+/1PHTSWrcHtx4XjluR5w==
     dependencies:
-      "@prisma/engines-version" "5.4.1-2.ac9d7041ed77bcc8a8dbd2ab6616b39013829574"
+      "@prisma/engines-version" "5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a"
   
-  "@prisma/engines-version@5.4.1-2.ac9d7041ed77bcc8a8dbd2ab6616b39013829574":
-    version "5.4.1-2.ac9d7041ed77bcc8a8dbd2ab6616b39013829574"
-    resolved "https://registry.yarnpkg.com/@prisma/engines-version/-/engines-version-5.4.1-2.ac9d7041ed77bcc8a8dbd2ab6616b39013829574.tgz#ff14f2926890edee47e8f1d08df7b4f392ee34bf"
-    integrity sha512-wvupDL4AA1vf4TQNANg7kR7y98ITqPsk6aacfBxZKtrJKRIsWjURHkZCGcQliHdqCiW/hGreO6d6ZuSv9MhdAA==
+  "@prisma/engines-version@5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a":
+    version "5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a"
+    resolved "https://registry.yarnpkg.com/@prisma/engines-version/-/engines-version-5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a.tgz#35cd59ed65ee1f9e333f4865ec86a4432c4d0a9c"
+    integrity sha512-O+qHFnZvAyOFk1tUco2/VdiqS0ym42a3+6CYLScllmnpbyiTplgyLt2rK/B9BTjYkSHjrgMhkG47S0oqzdIckA==
   
-  "@prisma/engines@5.4.2":
-    version "5.4.2"
-    resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-5.4.2.tgz#ba2b7faeb227c76e423e88f962afe6a031319f3f"
-    integrity sha512-fqeucJ3LH0e1eyFdT0zRx+oETLancu5+n4lhiYECyEz6H2RDskPJHJYHkVc0LhkU4Uv7fuEnppKU3nVKNzMh8g==
+  "@prisma/engines@5.5.2":
+    version "5.5.2"
+    resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-5.5.2.tgz#fe0d2361a48c7d59568ccf0d35c75432594e1ac1"
+    integrity sha512-Be5hoNF8k+lkB3uEMiCHbhbfF6aj1GnrTBnn5iYFT7GEr3TsOEp1soviEcBR0tYCgHbxjcIxJMhdbvxALJhAqg==
   
   "@types/body-parser@*":
     version "1.19.3"
@@ -559,6 +569,13 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
     integrity sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==
   
+  excel-export@~0.3.11:
+    version "0.3.11"
+    resolved "https://registry.yarnpkg.com/excel-export/-/excel-export-0.3.11.tgz#6bf6b9d65555ebe3f0daeaa5732f7b69986a7eb4"
+    integrity sha512-yeAj651KpOFsTej/WolfJyjJNyKn4b4SM8aLKohteBn7fJqXPmW+x+t80O2g+AJD2WZlpTc93Lw0gk5KIBPBJw==
+    dependencies:
+      node-zip "1.x"
+  
   express-handlebars@^7.1.2:
     version "7.1.2"
     resolved "https://registry.yarnpkg.com/express-handlebars/-/express-handlebars-7.1.2.tgz#2471673d11af46f496cba4098a705f0217232fda"
@@ -866,6 +883,20 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/jiti/-/jiti-1.20.0.tgz#2d823b5852ee8963585c8dd8b7992ffc1ae83b42"
     integrity sha512-3TV69ZbrvV6U5DfQimop50jE9Dl6J8O1ja1dvBbMba/sZ3YBEQqJ2VZRoQPVnhlzjNtU1vaXRZVrVjU4qtm8yA==
   
+  json2xls@^0.1.2:
+    version "0.1.2"
+    resolved "https://registry.yarnpkg.com/json2xls/-/json2xls-0.1.2.tgz#37358ed82a8fcaf92bb3b24d8759ac57e394e017"
+    integrity sha512-cnYzE6hzdYoiMAiCKnX6SJooyQ3cq+KKhEWv5d7CQNiX3TRIeEZsvvbeuIiB78Be5qDok7SBGuTv3IU524DTFQ==
+    dependencies:
+      excel-export "~0.3.11"
+  
+  jszip@2.5.0:
+    version "2.5.0"
+    resolved "https://registry.yarnpkg.com/jszip/-/jszip-2.5.0.tgz#7444fd8551ddf3e5da7198fea0c91bc8308cc274"
+    integrity sha512-IRoyf8JSYY3nx+uyh5xPc0qdy8pUDTp2UkHOWYNF/IO/3D8nx7899UlSAjD8rf8wUgOmm0lACWx/GbW3EaxIXQ==
+    dependencies:
+      pako "~0.2.5"
+  
   lilconfig@^2.0.5, lilconfig@^2.1.0:
     version "2.1.0"
     resolved "https://registry.yarnpkg.com/lilconfig/-/lilconfig-2.1.0.tgz#78e23ac89ebb7e1bfbf25b18043de756548e7f52"
@@ -989,6 +1020,13 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
     integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
   
+  node-zip@1.x:
+    version "1.1.1"
+    resolved "https://registry.yarnpkg.com/node-zip/-/node-zip-1.1.1.tgz#94d1ad674a3cd46a1588dd736f4a9a78c757eb62"
+    integrity sha512-sXfGL65EcaAJqNSXxuyf//i4D4geUtJgZDYUd7IBo2/CH8XY8vcWh1+CBCxuVVyR+S4vAFc3hr//JkCi2+V5vg==
+    dependencies:
+      jszip "2.5.0"
+  
   nodemon@^2.0.22:
     version "2.0.22"
     resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-2.0.22.tgz#182c45c3a78da486f673d6c1702e00728daf5258"
@@ -1045,6 +1083,11 @@ Lockfile:
     integrity sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==
     dependencies:
       wrappy "1"
+  
+  pako@~0.2.5:
+    version "0.2.9"
+    resolved "https://registry.yarnpkg.com/pako/-/pako-0.2.9.tgz#f3f7522f4ef782348da8161bad9ecfd51bf83a75"
+    integrity sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==
   
   parseurl@~1.3.3:
     version "1.3.3"
@@ -1152,12 +1195,12 @@ Lockfile:
       picocolors "^1.0.0"
       source-map-js "^1.0.2"
   
-  prisma@^5.4.2:
-    version "5.4.2"
-    resolved "https://registry.yarnpkg.com/prisma/-/prisma-5.4.2.tgz#7eac9276439ec7073ec697c6c0dfa259d96e955e"
-    integrity sha512-GDMZwZy7mysB2oXU+angQqJ90iaPFdD0rHaZNkn+dio5NRkGLmMqmXs31//tg/qXT3iB0cTQwnGGQNuirhSTZg==
+  prisma@^5.5.2:
+    version "5.5.2"
+    resolved "https://registry.yarnpkg.com/prisma/-/prisma-5.5.2.tgz#54ad2f04f0dd4174f27128e4447013e8d75c4d69"
+    integrity sha512-WQtG6fevOL053yoPl6dbHV+IWgKo25IRN4/pwAGqcWmg7CrtoCzvbDbN9fXUc7QS2KK0LimHIqLsaCOX/vHl8w==
     dependencies:
-      "@prisma/engines" "5.4.2"
+      "@prisma/engines" "5.5.2"
   
   proxy-addr@~2.0.7:
     version "2.0.7"
@@ -1364,6 +1407,7 @@ Lockfile:
     integrity sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==
   
   "string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+    name string-width-cjs
     version "4.2.3"
     resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
     integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -1382,6 +1426,7 @@ Lockfile:
       strip-ansi "^7.0.1"
   
   "strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+    name strip-ansi-cjs
     version "6.0.1"
     resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
     integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -1571,6 +1616,7 @@ Lockfile:
     integrity sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==
   
   "wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+    name wrap-ansi-cjs
     version "7.0.0"
     resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
     integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
