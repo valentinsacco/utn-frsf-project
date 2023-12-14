@@ -23,7 +23,7 @@ interface CustomWebSocket extends WebSocket {
 
 export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
-    
+
     let node_name: string | undefined = undefined
     let ping_time: number = Date.now()
     let pong_time: number | undefined = undefined
@@ -34,9 +34,9 @@ export const websockets = (server: ServerType) => {
     let start_measuring: boolean = false
     let socket_id_under_measure: string | undefined = undefined
     let measure_id: number | undefined = undefined
+    let isPinsConfigured: boolean = false
 
     ws.on('connection', (socket: CustomWebSocket) => {
-
         socket.send('type:server')
 
         const pingInterval = setInterval(async () => {
@@ -120,7 +120,7 @@ export const websockets = (server: ServerType) => {
             if (event === 'type') {
                 if (data === 'node') {
                     socket_type = SocketType.NODE
-                    socket.send('node-name:test')
+                    socket.send('node-name:_')
                 }
                 if (data === 'client') {
                     socket_type = SocketType.CLIENT
@@ -184,11 +184,99 @@ export const websockets = (server: ServerType) => {
                             )
                         }
                     })
+
+                    // if (node_name && socket_type === SocketType.NODE) {
+                    //     socket.send('pins-config:_')
+                    // }
                 } catch (error) {
                     if (error instanceof Error) {
                         console.log(error.message)
                     }
                     console.log(error)
+                }
+            }
+
+            // El objeto data es un string que contiene un objeto JSON, y se corta dado se separa por : en el mensaje
+            if (event === 'pins-config') {
+                console.log('here')
+
+                if (!isPinsConfigured) {
+                    console.log(`🎉 [server]: Configuración de pines recibida`)
+                
+                    isPinsConfigured = true
+
+                    const index = Buffer.from(msg, 'base64')
+                        .toString('ascii')
+                        .indexOf(':')
+
+                    const data = Buffer.from(msg, 'base64')
+                        .toString('ascii')
+                        .slice(index + 1)
+
+                    const pinsConfig = JSON.parse(data)
+
+                    try {
+                        if (node_name) {
+                            const currentPinsConfig =
+                                await prisma.node.findUnique({
+                                    where: {
+                                        name: node_name
+                                    },
+                                    select: {
+                                        pins: true
+                                    }
+                                })
+
+                            if (
+                                currentPinsConfig &&
+                                currentPinsConfig?.pins?.length > 0
+                            ) {
+                                const pinsToDelete =
+                                    currentPinsConfig.pins.filter(
+                                        (pin) =>
+                                            !Object.keys(pinsConfig).includes(
+                                                pin.name
+                                            )
+                                    )
+
+                                console.log(pinsToDelete)
+
+                                if (pinsToDelete.length > 0) {
+                                    await prisma.pin.deleteMany({
+                                        where: {
+                                            name: {
+                                                in: pinsToDelete.map(
+                                                    (pin) => pin.name
+                                                )
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+
+                            await prisma.node.update({
+                                where: {
+                                    name: node_name
+                                },
+                                data: {
+                                    pins: {
+                                        create: Object.entries(pinsConfig).map(
+                                            ([pin, mode]) => ({
+                                                name: pin,
+                                                nickname: pin,
+                                                mode: mode as string
+                                            })
+                                        )
+                                    }
+                                }
+                            })
+                        }
+                    } catch (error) {
+                        if (error instanceof Error) {
+                            console.log(error.message)
+                        }
+                        console.log(error)
+                    }
                 }
             }
 
@@ -205,7 +293,10 @@ export const websockets = (server: ServerType) => {
                 }
             }
 
-            if (event === 'state-change') {
+            if (event === 'digital-state-change') {
+            }
+
+            if (event === 'digital-pin-change') {
             }
 
             if (event === 'continuous-data') {
@@ -214,34 +305,15 @@ export const websockets = (server: ServerType) => {
 
                 if (!isNaN(parsedValue)) {
                     savedValues.push(parsedValue)
-                    if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                    if (
+                        start_measuring &&
+                        typeof socket_id_under_measure !== 'undefined'
+                    ) {
                         measuredValues.push({
                             value: parsedValue,
                             timestamp: new Date().toISOString()
                         })
                     }
-  
-                    // { socket_id: '001', values: [{ value: 0.5, timestamp: '10-11-23' }] }
-
-                    // try {
-                    //     if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
-                    //         await prisma.value.create({
-                    //             data: {
-                    //                 value: parsedValue,
-                    //                 measure: {
-                    //                     connect: {
-                    //                         id: measure_id
-                    //                     }
-                    //                 }
-                    //             }
-                    //         })
-                    //     }
-                    // } catch (error) {
-                    //     if (error instanceof Error) {
-                    //         console.log(error.message)
-                    //     }
-                    //     console.log(error)
-                    // }
 
                     ws.clients.forEach((client) => {
                         if (client !== socket && client.readyState === OPEN) {
@@ -253,53 +325,6 @@ export const websockets = (server: ServerType) => {
                 }
             }
 
-            if (event === 'direction') {
-                const direction = data
-                const socket_id = payload
-
-                if (direction === 'clockwise') {
-                    ws.clients.forEach((client) => {
-                        if ('socket_id' in client) {
-                            const customClient = client as CustomWebSocket
-
-                            if (customClient.readyState === OPEN) {
-                                if (customClient.socket_id === socket_id) {
-                                    customClient.send('direction:clockwise')
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    ws.clients.forEach((client) => {
-                        if ('socket_id' in client) {
-                            const customClient = client as CustomWebSocket
-
-                            if (customClient.readyState === OPEN) {
-                                if (customClient.socket_id === socket_id) {
-                                    customClient.send('direction:anticlockwise')
-                                }
-                            }
-                        }
-                    })
-                }
-            }
-
-            if (event === 'stop-motor') {
-                const socket_id = payload
-
-                ws.clients.forEach((client) => {
-                    if ('socket_id' in client) {
-                        const customClient = client as CustomWebSocket
-
-                        if (customClient.readyState === OPEN) {
-                            if (customClient.socket_id === socket_id) {
-                                customClient.send('stop-motor:true')
-                            }
-                        }
-                    }
-                })
-            }
-
             if (event === 'measure') {
                 const measureStatus = data
                 const socket_id = payload
@@ -308,17 +333,17 @@ export const websockets = (server: ServerType) => {
                     start_measuring = true
                     socket_id_under_measure = socket_id
                     // payload = 'socket_id; username; measure_name; readed_pin'
-    
+
                     try {
                         const measure = await prisma.measure.create({
                             data: {
                                 username: 'test',
                                 measureName: 'test',
                                 nodeName: socket_id_under_measure,
-                                readedPin: 'A0',
+                                readedPin: 'A0'
                             }
                         })
-    
+
                         measure_id = measure.id
                     } catch (error) {
                         if (error instanceof Error) {
@@ -349,7 +374,7 @@ export const websockets = (server: ServerType) => {
                         }
                         console.log(error)
                     }
-                    
+
                     socket_id_under_measure = undefined
                     measure_id = undefined
                     measuredValues.length = 0

@@ -11,10 +11,22 @@ model Node {
   id        String   @id @default(cuid())
   name      String   @unique
   status    Boolean
+  pins      Pin[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([name], name: "name")
+}
+
+model Pin {
+  id       String @id @default(cuid())
+  name     String
+  nickname String
+  mode     String
+  node     Node   @relation(fields: [nodeId], references: [id])
+  nodeId   String
+
+  @@index([nodeId], name: "nodeId")
 }
 
 // Do migrations

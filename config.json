@@ -1,0 +1,30 @@
+{
+    "config": {
+        "output": {  // Van a ser representados por un botón en la página web
+            "digital": {
+                "nombre_de_la_acción_1": true,
+                "nombre_de_la_acción_2": false
+            }, 
+            "analog": { // Van a ser representados por un input o un slider en la página web
+                "proporcional": "0.5",
+                "derivar": "0.5",
+                "integrar": "0.5"
+            }
+        },
+        "input": {
+            "digital": {  // Van a ser representados con un indicador en la página web
+                "nombre_del_sensor_1": true,
+                "nombre_del_sensor_2": false
+            }, 
+            "analog": {  // Van a ser representados con un gráfico en la página web
+                "nombre_del_sensor_analógico": {
+                    // "type": "chart",
+                    "data": {
+                        "labelx": "Tiempo",
+                        "labely": "Valor"
+                    }
+                }
+            }
+        }
+    }
+}

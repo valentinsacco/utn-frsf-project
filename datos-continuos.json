@@ -1,0 +1,39 @@
+// Datos recibidos por el Servidor
+
+{
+    "digital": {
+        "nombre_del_sensor_1": true,
+        "nombre_del_sensor_2": false,
+        "nombre_del_sensor_3": true
+    }
+}
+
+{
+    "analog": {
+        "nombre_del_sensor_1": {
+            "x": 0,
+            "y": 1
+        },
+        "nombre_del_sensor_2": {
+            "x": 0,
+            "y": 1
+        }
+    }
+}
+
+// Datos emitidos por el Servidor
+// Enviar solo los datos que cambian
+
+{
+    "digital": {
+        "nombre_del_accion_1": true,
+    }
+}
+
+{
+    "analog": {
+        "nombre_de_la_variable_1": "12",
+        "nombre_de_la_variable_2": "16",
+        "nombre_de_la_variable_3": "10",
+    }
+}

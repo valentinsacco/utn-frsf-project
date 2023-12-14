@@ -18,13 +18,18 @@
             <h1 id='node-name' class='text-xl text-gray-800 capitalize'></h1>
         </div>
         <div>
-            <div class='flex flex-row items-center mt-4 mb-2'>
-                <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
-                <div class='ml-2' id='motor-status'>🔴</div>
+            <h2 class='mb-2 text-lg font-medium text-gray-600'>Pines:</h2>
+            <div class="flex flex-row gap-2">
+                <button onclick="changeDigitalPinState(D1)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D0</button>
+                <button onclick="changeDigitalPinState(D2)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D1</button>
+                <button onclick="changeDigitalPinState(D3)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D2</button>
+                <button onclick="changeDigitalPinState(D4)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D3</button>
+                <button onclick="changeDigitalPinState(D5)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D4</button>
+                <button onclick="changeDigitalPinState(D6)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D5</button>
+                <button onclick="changeDigitalPinState(D7)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D6</button>
+                <button onclick="changeDigitalPinState(D8)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D7</button>
+                <button onclick="changeDigitalPinState(D9)" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">D8</button>
             </div>
-            <button onclick="clockwise()" class='px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Agujas Del Reloj</button>
-            <button onclick="anticlockwise()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Contrario Agujas Del Reloj</button>
-            <button onclick="stopMotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
         </div>
         <div class="mt-6">
             <h2 class='mb-2 text-lg font-medium text-gray-600'>Medición:</h2>
@@ -53,6 +58,18 @@
         const toolTipWidth = 80
         const toolTipHeight = 80
         const toolTipMargin = 15
+
+        const pinsState = {
+            D1: false,
+            D2: false,
+            D3: false,
+            D4: false,
+            D5: false,
+            D6: false,
+            D7: false,
+            D8: false,
+            D9: false,
+        }
 
         const chart = LightweightCharts.createChart(lwc, {
             height: 400,
@@ -87,12 +104,30 @@
             },
         }) 
 
+        chart.applyOptions({
+            priceScale: {
+                mode: LightweightCharts.PriceScaleMode.Normal, 
+                autoScale: true,
+                invertScale: false, 
+                alignLabels: true, 
+                borderVisible: true, 
+                borderColor: '#4b5563',
+                borderWidth: 2,
+                baseLineColor: '#4b5563',
+                baseLineWidth: 10,
+                scaleMargins: {
+                top: 0.2,
+                bottom: 0.1
+                },
+            }
+        })
+
         const areaChart = chart.addAreaSeries({
             topColor: 'rgba(38, 198, 218, 0.56)',
             bottomColor: 'rgba(38, 198, 218, 0.04)',
             lineColor: 'rgba(38, 198, 218, 1)',
             lineWidth: 2,
-            crossHairMarkerVisible: false,
+            crossHairMarkerVisible: false
         })
 
         areaChart.setData([])
@@ -203,22 +238,10 @@
             }
         }
 
-        const clockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:clockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
-        }
-
-        const anticlockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:anticlockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
-        }
-
-        const stopMotor = () => {
-            isMotorStopped = true
-            socket.send(`stop-motor:true:${node_name}`)
-            motorStatus.innerHTML = `🔴`
+        const changeDigitalPinState = (pin) => {
+            const currentState = pinsState[pin]
+            socket.send(`digital-pin:${pin}:${node_name}/${!currentState}`)
+            // pinsState[pin] = !pinsState[pin]
         }
 
         measureBtn.addEventListener('click', () => {
