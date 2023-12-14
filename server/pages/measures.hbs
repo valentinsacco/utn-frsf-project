@@ -1,5 +1,5 @@
 {{#> layout}}
-    <div class='px-20 py-10 grid place-items-center'>
+    <div class='p-5 md:px-20 md:py-10 grid place-items-center'>
         <div>
             <div class="mb-4 flex flex-row items-center justify-between">
                 <a href="/" class="z-40">
@@ -9,7 +9,7 @@
                 </a>
                 <h1 class="font-semibold text-lg text-center w-full -ml-5 z-0">Mediciones</h1>
             </div> 
-            <ul id='measures' class="flex flex-col gap-2 w-96"></ul>
+            <ul id='measures' class="flex flex-col gap-2 w-80 md:w-96 items-center"></ul>
         </div>
     </div>
     <script>
@@ -23,7 +23,7 @@
             if (measures.success) {
                 measures.response.forEach(measure => {
                     measuresContainer.innerHTML += `
-                        <li class="h-20 w-96 px-4 flex flex-row justify-between items-center bg-white rounded-md">
+                        <li class="h-20 w-80 md:w-96 px-4 flex flex-row justify-between items-center bg-white rounded-md">
                             <div class='w-3/4'>
                                 <h3 class="mb-1 capitalize">${measure.nodeName}</h3>
                                 <span id="timestamp" class="w-full line-clamp-1">${measure.timestamp}</span>

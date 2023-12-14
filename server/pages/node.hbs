@@ -1,5 +1,5 @@
 {{#> layout}}
-    <div id="container" class='px-20 py-10'>
+    <div id="container" class='p-5 md:px-20 md:py-10'>
         <a href="/" class="mb-4 block">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.5 16.5999L7.06667 11.1666C6.425 10.5249 6.425 9.4749 7.06667 8.83324L12.5 3.3999" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
@@ -17,21 +17,44 @@
             </div>
             <h1 id='node-name' class='text-xl text-gray-800 capitalize'></h1>
         </div>
-        <div>
-            <div class='flex flex-row items-center mt-4 mb-2'>
-                <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
-                <div class='ml-2' id='motor-status'>🔴</div>
-            </div>
-            <button onclick="clockwise()" class='px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Agujas Del Reloj</button>
-            <button onclick="anticlockwise()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Sentido Contrario Agujas Del Reloj</button>
-            <button onclick="stopMotor()" class='px-4 ml-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11'>Parar Motor</button>
-        </div>
-        <div class="mt-6">
+        <div class='mt-4 px-4 mb-4'>
             <h2 class='mb-2 text-lg font-medium text-gray-600'>Medición:</h2>
             <button id="measure-btn" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">Empezar Medición</button>
         </div>
-        <h2 class='mt-6 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
-        <div id='lwc'></div>
+        <div class='border-t border-slate-400/20 mb-4 px-4'>
+            <div class='flex flex-row items-center mt-4 mb-2'>
+                <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
+                <div
+                    id='motor-status-background'
+                    class='ml-2 h-3.5 w-3.5 rounded-full bg-red-200 grid place-items-center'
+                >
+                    <div
+                        id='motor-status'
+                        class='w-2 h-2 rounded-full bg-red-500'
+                    ></div>
+                </div>
+            </div>
+            <div class="flex flex-row gap-2 mb-4">
+                <span class="ms-3 text-sm font-medium text-gray-900">Apagado</span>
+                <label class="relative inline-flex items-center cursor-pointer ml-1.5">
+                    <input id="start-motor-btn" type="checkbox" value="" class="sr-only peer" onchange="handleStartToggle(event)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+                <span class="text-sm font-medium text-gray-900">Encendido</span>
+            </div>
+            <div class="flex flex-row gap-2 mb-4">
+                <span class="ms-3 text-sm font-medium text-gray-900">Retroceso</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input id="direction-motor-btn" type="checkbox" value="" class="sr-only peer" onchange="handleChangeDirectionToggle(event)" checked>
+                    <div class="w-11 h-6 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-200"></div>
+                </label>
+                <span class="text-sm font-medium text-gray-900">Avance</span>
+            </div>
+        </div>
+        <div class='border-t border-slate-400/20 px-4'>
+            <h2 class='mt-4 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
+            <div id='lwc'></div>
+        </div>
     </div>
     <script src="https://unpkg.com/lightweight-charts@3.4.0/dist/lightweight-charts.standalone.production.js"></script>
     <script>
@@ -44,10 +67,12 @@
         const nodeStatusBackground = document.getElementById('node-status-background')
         const nodeStatusPoint = document.getElementById('node-status')
         const motorStatus = document.getElementById('motor-status')
+        const motorStatusBackground = document.getElementById('motor-status-background')
         const lwc = document.getElementById('lwc')
         const measureBtn = document.getElementById('measure-btn')
 
-        let isMotorStopped = false
+        let motorWorking = false
+        let motorDirection = true   // true = avance, false = retroceso
         let nodeStatus = true
         let isMeasureActive = false
         const toolTipWidth = 80
@@ -156,69 +181,130 @@
             }
         })
 
+        const startMotorBtn = document.getElementById('start-motor-btn')
+        const directionMotorBtn = document.getElementById('direction-motor-btn')
+
         socket.onopen = () => {
             console.log('🎉 WS Connected')
+
+            socket.send(JSON.stringify({ event: 'currentStateClient', data: node_name }))
         }
 
         socket.onmessage = (e) => {
-            const event = e.data.split(':')[0]
-            const data = e.data.split(':')[1]
-            const payload = e.data.substring(event.length + data.length + 2)
+            const msg = JSON.parse(e.data)
+
+            const event = msg.event
+            const data = msg.data
+            const nodeName = msg?.nodeName
+            const destination = msg?.destination
 
             if (event === 'type') {
-                socket.send('type:client')
+                socket.send(JSON.stringify({ event: 'type', data: 'client' }))
             }
 
-            if (event === 'client') {
-                const subevent = data
-                if (subevent === 'status') {
-                    const parsed = JSON.parse(payload)
-                    if (Array.isArray(parsed)) {
-                        parsed.forEach(node => {
-                            // '🟢' : '🔴'
-                            if (node.nodeName === node_name) {
-                                nodeStatus = node.status
-                                nodeStatusBackground.classList.remove('bg-red-200')
-                                nodeStatusBackground.classList.remove('bg-emerald-200')
-                                nodeStatusBackground.classList.add(`bg-${node.status ? 'emerald' : 'red'}-200`)
-                                nodeStatusPoint.classList.remove('bg-red-500')
-                                nodeStatusPoint.classList.remove('bg-emerald-500')
-                                nodeStatusPoint.classList.add(`bg-${node.status ? 'emerald' : 'red'}-500`)
-                            }
-                        })
+            if (destination && destination === 'client') {
+                if (node_name === nodeName) {
+                    if (event === 'initialState') { // No funcionando del todo bien
+                        if (data.motorStatus) {
+                            motorWorking = true
+                            startMotorBtn.checked = true
+                            motorStatus.classList.remove('bg-red-500')
+                            motorStatus.classList.add('bg-emerald-500')
+                            motorStatusBackground.classList.remove('bg-red-200')
+                            motorStatusBackground.classList.add('bg-emerald-200')
+                        } else {
+                            motorWorking = false
+                            startMotorBtn.checked = false
+                            motorStatus.classList.add('bg-red-500')
+                            motorStatus.classList.remove('bg-emerald-500')
+                            motorStatusBackground.classList.add('bg-red-200')
+                            motorStatusBackground.classList.remove('bg-emerald-200')
+                        }
+
+                        if (data.motorDirection === 'clockwise') {
+                            motorDirection = true
+                            directionMotorBtn.checked = true
+                        } else {
+                            motorDirection = false
+                            directionMotorBtn.checked = false
+                        }
+                    }
+
+                    if (event === 'currentState') {
+                        if (data.motorStatus) {
+                            motorWorking = true
+                            startMotorBtn.checked = true
+                            motorStatus.classList.remove('bg-red-500')
+                            motorStatus.classList.add('bg-emerald-500')
+                            motorStatusBackground.classList.remove('bg-red-200')
+                            motorStatusBackground.classList.add('bg-emerald-200')
+                        } else {
+                            motorWorking = false
+                            startMotorBtn.checked = false
+                            motorStatus.classList.add('bg-red-500')
+                            motorStatus.classList.remove('bg-emerald-500')
+                            motorStatusBackground.classList.add('bg-red-200')
+                            motorStatusBackground.classList.remove('bg-emerald-200')
+                        }
+
+                        if (data.motorDirection === 'clockwise') {
+                            motorDirection = true
+                            directionMotorBtn.checked = true
+                        } else {
+                            motorDirection = false
+                            directionMotorBtn.checked = false
+                        }
+                    }
+
+                    if (event === 'continuous-data') {
+                        if (!isNaN(data.value)) {
+                            areaChart.update({
+                                time: new Date().getTime(),
+                                value: data.value
+                            })
+                        }
                     }
                 }
 
-                if (subevent === 'continuous-data') {
-                    const analogValue = payload.split('/')[0]
-                    const socket_id = payload.split('/')[1]
-                    const value = parseFloat(analogValue)
-                    if (!isNaN(value) && socket_id === node_name) {
-                        areaChart.update({
-                            time: new Date().getTime(),
-                            value: value
-                        })
-                    }
+                if (event === 'status') {
+                    const nodeState = data.find(node => node.name === node_name)
+                    nodeStatus = nodeState.status
+
+                    nodeStatusIndicator(nodeState.status)
                 }
             }
         }
 
-        const clockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:clockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
+        const handleStartToggle = e => {
+            if (e.target.checked) {
+                motorWorking = true
+                motorStatus.classList.remove('bg-red-500')
+                motorStatus.classList.add('bg-emerald-500')
+                motorStatusBackground.classList.remove('bg-red-200')
+                motorStatusBackground.classList.add('bg-emerald-200')
+                if (motorDirection) {
+                    socket.send(JSON.stringify({ event: 'startMotor', data: 'clockwise', nodeName: node_name }))
+                } else {
+                    socket.send(JSON.stringify({ event: 'startMotor', data: 'anticlockwise', nodeName: node_name }))
+                }
+            } else {
+                motorWorking = false
+                socket.send(JSON.stringify({ event: 'stopMotor', nodeName: node_name }))
+                motorStatus.classList.add('bg-red-500')
+                motorStatus.classList.remove('bg-emerald-500')
+                motorStatusBackground.classList.add('bg-red-200')
+                motorStatusBackground.classList.remove('bg-emerald-200')
+            }
         }
 
-        const anticlockwise = () => {
-            isMotorStopped = false
-            socket.send(`direction:anticlockwise:${node_name}`)
-            motorStatus.innerHTML = `🟢`
-        }
-
-        const stopMotor = () => {
-            isMotorStopped = true
-            socket.send(`stop-motor:true:${node_name}`)
-            motorStatus.innerHTML = `🔴`
+        const handleChangeDirectionToggle = e => {
+            if (e.target.checked) {
+                motorDirection = true
+                if (motorWorking) socket.send(JSON.stringify({ event: 'startMotor', data: 'clockwise', nodeName: node_name }))
+            } else {
+                motorDirection = false
+                if (motorWorking) socket.send(JSON.stringify({ event: 'startMotor', data: 'anticlockwise', nodeName: node_name }))
+            }
         }
 
         measureBtn.addEventListener('click', () => {
@@ -232,5 +318,14 @@
                 measureBtn.innerHTML = 'Empezar Medición'
             }
         })
+
+        const nodeStatusIndicator = (status) => {
+            nodeStatusBackground.classList.remove('bg-red-200')
+            nodeStatusBackground.classList.remove('bg-emerald-200')
+            nodeStatusBackground.classList.add(`bg-${status ? 'emerald' : 'red'}-200`)
+            nodeStatusPoint.classList.remove('bg-red-500')
+            nodeStatusPoint.classList.remove('bg-emerald-500')
+            nodeStatusPoint.classList.add(`bg-${status ? 'emerald' : 'red'}-500`)
+        }
     </script>
 {{/layout}}

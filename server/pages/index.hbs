@@ -2,7 +2,7 @@
     <nav class='h-20 w-full px-5 md:px-20 flex flex-row items-center justify-between'>
         <img
             src='https://www.frsf.utn.edu.ar/templates/utn17/img/utnsantafe-color.png'
-            class='h-10'
+            class='h-5 md:h-10'
         />
         <a href="/measures">
             <span>
@@ -36,46 +36,30 @@
         setCardContainerGap(winWidth)
     })
 
-
-
     const socket = new WebSocket('ws://localhost:4200')
 
     socket.onopen = () => {
         console.log('🎉 WS Connected')
-
-        socket.send('get-nodes:test')
     }
 
     socket.onmessage = (e) => {
-        const event = e.data.split(':')[0]
-        const data = e.data.split(':')[1]
-        const payload = e.data.substring(event.length + data.length + 2)
+        const msg = JSON.parse(e.data)
+
+        const event = msg.event
+        const data = msg.data
 
         if (event === 'type') {
-            socket.send('type:client')
+            socket.send(JSON.stringify({ event: 'type', data: 'client' }))
         }
 
-        if (event === 'nodes') {
-            const parsed = JSON.parse(payload)
-
+        if (event === 'status') {
             cardContainer.innerHTML = ''
-            parsed.forEach(node => {
-                cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
-            })
-        }
-
-        if (event === 'client') {
-            if (data === 'status') {
-                const parsed = JSON.parse(payload)
-
-                cardContainer.innerHTML = ''
-                if (parsed.length === 0) {
-                    cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
-                } else {
-                    parsed.forEach(node => {
-                        cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
-                    })
-                }
+            if (data.length === 0) {
+                cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
+            } else {
+                data.forEach(node => {
+                    cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
+                })
             }
         }
     }
