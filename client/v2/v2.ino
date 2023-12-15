@@ -37,7 +37,7 @@ WebSocketsClient webSocket;
 
 bool connectedToServer = false;
 bool motorWorking = false;
-bool motorDirection = true;
+bool motorDirection = true; // true: avanza, false: retrocede
 
 unsigned long lastAnalogPinReadTime = 0;
 
@@ -107,34 +107,34 @@ void loop() {
 
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
-    case WStype_DISCONNECTED:
-        Serial.println("Disconnected from WebSocket server");
-        connectedToServer = false;
-        break;
-    case WStype_CONNECTED: {
-        Serial.println("Connected to WebSocket server");
-        connectedToServer = true;
+        case WStype_DISCONNECTED:
+            Serial.println("Disconnected from WebSocket server");
+            connectedToServer = false;
+            break;
+        case WStype_CONNECTED: {
+            Serial.println("Connected to WebSocket server");
+            connectedToServer = true;
 
-        StaticJsonDocument<200> doc;
+            StaticJsonDocument<200> doc;
 
-        doc["event"] = "initialStateNode";
-        doc["nodeName"] = NODE_NAME;
-        
-        JsonObject data = doc.createNestedObject("data");
-        data["motorStatus"] = parseBooleanToString(motorWorking);
-        data["motorDirection"] = motorDirection ? "clockwise" : "anticlockwise";
+            doc["event"] = "initialStateNode";
+            doc["nodeName"] = NODE_NAME;
+            
+            JsonObject data = doc.createNestedObject("data");
+            data["motorStatus"] = parseBooleanToString(motorWorking);
+            data["motorDirection"] = motorDirection ? "clockwise" : "anticlockwise";
 
-        char object[200];
-        serializeJson(doc, object);
+            char object[200];
+            serializeJson(doc, object);
 
-        webSocket.sendTXT(object);
-        break;
-    }
-    case WStype_TEXT:
-        handleWebSocketConnection((char *)payload);
-        break;
-    case WStype_PING:
-        webSocket.sendTXT("ping:pong");
+            webSocket.sendTXT(object);
+            break;
+        }
+        case WStype_TEXT:
+            handleWebSocketConnection((char *)payload);
+            break;
+        case WStype_PING:
+            webSocket.sendTXT("ping:pong");
     }
 }
 

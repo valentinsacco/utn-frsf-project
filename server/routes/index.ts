@@ -73,8 +73,6 @@ router.get('/api/measures/download/:measure_id', async (req, res) => {
             }
             fs.unlinkSync(filePath)
         })
-
-        // res.send({ response: null, success: true, message: '' })
     } catch (error) {
         console.log(error)
         res.json({ response: null, success: false, message: 'Algo salió mal' })
@@ -87,8 +85,6 @@ router.get('/', (_, res) => {
 
 
 router.get('/node/:node_name', (req, res) => {
-    const { node_name } = req.params
-
     res.render('node')
 })
 
