@@ -194,6 +194,7 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
+            // Obtiene los valores leidos por el puerto analóogico A0
             if (event === 'continuousData') {
                 if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
                     measuredValues.push({
@@ -206,6 +207,14 @@ export const websockets = (server: ServerType) => {
                     // Este if hace que se envién los datos a todos los clientes menos al que envía los datos
                     if (client !== socket && client.readyState === OPEN) { // client !== socket
                         client.send(JSON.stringify({ destination: 'client', event: 'continuousData', nodeName, data }))   // Cambiar a continuousData
+                    }
+                })
+            }
+
+            if (event === 'sensorData') {
+                ws.clients.forEach((client) => {
+                    if (client.readyState === OPEN) {
+                        client.send(JSON.stringify({ destination: 'client', event: 'sensorData', nodeName, data }))
                     }
                 })
             }

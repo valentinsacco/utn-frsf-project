@@ -29,6 +29,17 @@
 #define NUM_STEPS 8
 #define STEPS_LOOKUP {B1000, B1100, B0100, B0110, B0010, B0011, B0001, B1001}
 
+// --- Datos de los LEDs ---
+
+#define MOTOR_STATUS_LED 4
+#define CLOCKWISE_DIRECTION_LED 5
+#define ANTICLOCKWISE_DIRECTION_LED 16
+
+// --- Datos de Sensores ---
+
+#define SENSOR_1 0
+#define SENSOR_2 2
+
 // --- Cliente WebSockets ---
 
 WebSocketsClient webSocket;
@@ -45,13 +56,30 @@ int stepCounter = 0;
 const int numSteps = NUM_STEPS;
 const int stepsLookup[NUM_STEPS] = STEPS_LOOKUP;
 
+bool sensor1LastState = true;
+bool sensor2LastState = true;
+
 void setup() {
     Serial.begin(115200);
 
+    // --- Configurando salidas ---
+    
+    // Motor
     pinMode(MOTOR_PIN_1, OUTPUT);
     pinMode(MOTOR_PIN_2, OUTPUT);
     pinMode(MOTOR_PIN_3, OUTPUT);
     pinMode(MOTOR_PIN_4, OUTPUT);
+
+    // LEDs
+    pinMode(MOTOR_STATUS_LED, OUTPUT);
+    pinMode(CLOCKWISE_DIRECTION_LED, OUTPUT);
+    pinMode(ANTICLOCKWISE_DIRECTION_LED, OUTPUT);
+
+    // --- Configurando entradas ---
+
+    // Sensores
+    pinMode(SENSOR_1, INPUT);
+    pinMode(SENSOR_2, INPUT);
 
     WiFi.begin(SSID, PASSWORD);
 
@@ -72,6 +100,9 @@ void loop() {
 
     webSocket.loop();
 
+    bool sensor1State = digitalRead(SENSOR_1);
+    bool sensor2State = digitalRead(SENSOR_2);
+
     if (connectedToServer) {
         if (motorWorking) {
             if (motorDirection) {
@@ -82,6 +113,72 @@ void loop() {
                 anticlockwise();
                 delayMicroseconds(MOTOR_SPEED);
             }
+        }
+
+        if (sensor1State != sensor1LastState) {
+             if (sensor1State == HIGH) {
+                StaticJsonDocument<200> doc;
+
+                doc["event"] = "sensorData";
+                doc["nodeName"] = NODE_NAME;
+                JsonObject data = doc.createNestedObject("data");
+
+                data["sensor"] = "sensor1";
+                data["value"] = String(sensor1State);
+
+                char object[200];
+                serializeJson(doc, object);
+                
+                webSocket.sendTXT(object);
+            } else {
+                StaticJsonDocument<200> doc;
+
+                doc["event"] = "sensorData";
+                doc["nodeName"] = NODE_NAME;
+                JsonObject data = doc.createNestedObject("data");
+
+                data["sensor"] = "sensor1";
+                data["value"] = String(sensor1State);
+
+                char object[200];
+                serializeJson(doc, object);
+                
+                webSocket.sendTXT(object);
+            }
+            sensor1LastState = sensor1State;
+        }
+       
+        if (sensor2State != sensor2LastState) {
+            if (sensor2State == HIGH) {
+                StaticJsonDocument<200> doc;
+
+                doc["event"] = "sensorData";
+                doc["nodeName"] = NODE_NAME;
+                JsonObject data = doc.createNestedObject("data");
+
+                data["sensor"] = "sensor2";
+                data["value"] = String(sensor2State);
+
+                char object[200];
+                serializeJson(doc, object);
+                
+                webSocket.sendTXT(object);
+            } else {
+                StaticJsonDocument<200> doc;
+
+                doc["event"] = "sensorData";
+                doc["nodeName"] = NODE_NAME;
+                JsonObject data = doc.createNestedObject("data");
+
+                data["sensor"] = "sensor2";
+                data["value"] = String(sensor2State);
+
+                char object[200];
+                serializeJson(doc, object);
+                
+                webSocket.sendTXT(object);
+            }
+            sensor2LastState = sensor2State;
         }
 
         if ((currentTime - lastAnalogPinReadTime) >= 500) {
@@ -187,18 +284,27 @@ void handleWebSocketConnection(char *message) {
                     Serial.println("[DigitalPin]: Motor girando en sentindo de las agujas del reloj");
                     motorDirection = true;
                     motorWorking = true;
+                    digitalWrite(MOTOR_STATUS_LED, HIGH);
+                    digitalWrite(CLOCKWISE_DIRECTION_LED, HIGH);
+                    digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
                     clockwise();
                 }
                 else if (value == "anticlockwise") {
                     Serial.println("[DigitalPin]: Motor girando en sentindo contrario a las agujas del reloj");
                     motorDirection = false;
                     motorWorking = true;
+                    digitalWrite(MOTOR_STATUS_LED, HIGH);
+                    digitalWrite(ANTICLOCKWISE_DIRECTION_LED, HIGH);
+                    digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
                     anticlockwise();
                 }
             }
 
             if (strcmp(event.c_str(), "stopMotorNode") == 0) {
                 Serial.println("[DigitalPin]: Motor parado");
+                digitalWrite(MOTOR_STATUS_LED, LOW);
+                digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
+                digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
                 motorWorking = false;
             }
 
@@ -216,52 +322,9 @@ void handleWebSocketConnection(char *message) {
                 char object[200];
                 serializeJson(doc, object);
 
-                Serial.println(object);
-
                 webSocket.sendTXT(object);
             }
         }
-
-    //     if (strcmp(event, "direction") == 0)
-    //     {
-    //         if (strcmp(value, "clockwise") == 0)
-    //         {
-    //             Serial.println("[DigitalPin]: Motor girando en sentindo de las agujas del reloj");
-    //             motorDirection = true;
-    //             motorWorking = true;
-    //         }
-    //         else if (strcmp(value, "anticlockwise") == 0)
-    //         {
-    //             Serial.println("[DigitalPin]: Motor girando en sentindo contrario a las agujas del reloj");
-    //             motorDirection = false;
-    //             motorWorking = true;
-    //         }
-    //     }
-
-    //     if (strcmp(event, "stop-motor") == 0)
-    //     {
-    //         Serial.println("[DigitalPin]: Motor parado");
-    //         motorWorking = false;
-    //     }
-
-    //     String command = String(event);
-
-    //     // Activando pines [ESP8266], mandando 'D12:HIGH', es decir, 'pin:estado'
-    //     // Desde el pin 12 al 15
-    //     if (command.startsWith("D"))
-    //     {
-    //         int pin = command.substring(1).toInt();
-    //         char *state = value;
-
-    //         if (strcmp(state, "HIGH") == 0)
-    //         {
-    //             digitalWrite(pin, HIGH);
-    //         }
-    //         else if (strcmp(state, "LOW") == 0)
-    //         {
-    //             digitalWrite(pin, LOW);
-    //         }
-    //     }
     }
 }
 

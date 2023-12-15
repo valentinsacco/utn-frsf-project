@@ -31,11 +31,29 @@
                 <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
                 <div
                     id='motor-status-background'
-                    class='ml-2 h-3.5 w-3.5 rounded-full bg-red-200 grid place-items-center'
+                    class='ml-2 h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
                 >
                     <div
                         id='motor-status'
-                        class='w-2 h-2 rounded-full bg-red-500'
+                        class='w-2 h-2 rounded-full bg-gray-400'
+                    ></div>
+                </div>
+                <div
+                    id='clockwise-direction-status-background'
+                    class='ml-2 h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
+                >
+                    <div
+                        id='clockwise-direction-status'
+                        class='w-2 h-2 rounded-full bg-gray-400'
+                    ></div>
+                </div>
+                <div
+                    id='anticlockwise-direction-status-background'
+                    class='ml-2 h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
+                >
+                    <div
+                        id='anticlockwise-direction-status'
+                        class='w-2 h-2 rounded-full bg-gray-400'
                     ></div>
                 </div>
             </div>
@@ -43,7 +61,7 @@
                 <span class="ms-3 text-sm font-medium text-gray-900">Apagado</span>
                 <label class="relative inline-flex items-center cursor-pointer ml-1.5">
                     <input id="start-motor-btn" type="checkbox" value="" class="sr-only peer" onchange="handleStartToggle(event)">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-200"></div>
                 </label>
                 <span class="text-sm font-medium text-gray-900">Encendido</span>
             </div>
@@ -54,6 +72,37 @@
                     <div class="w-11 h-6 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-200"></div>
                 </label>
                 <span class="text-sm font-medium text-gray-900">Avance</span>
+            </div>
+        </div>
+        <div class='border-t border-slate-400/20 mb-4 px-4'>
+            <div class='mt-4 mb-2'>
+                <h2 class='text-lg font-medium text-gray-600'>Sensores</h2>
+            </div>
+            <div class='flex flex-row gap-4'>
+                <div class='flex flex-col gap-2 justify-center items-center'>
+                    <div
+                        id='sensor-1-status-bg'
+                        class='h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
+                    >
+                        <div
+                            id='sensor-1-status'
+                            class='w-2 h-2 rounded-full bg-gray-400'
+                        ></div>
+                    </div>
+                    <span class='text-sm font-medium text-gray-900'>Sensor 1</span>
+                </div>
+                <div class='flex flex-col gap-2 justify-center items-center'>
+                    <div
+                        id='sensor-2-status-bg'
+                        class='h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
+                    >
+                        <div
+                            id='sensor-2-status'
+                            class='w-2 h-2 rounded-full bg-gray-400'
+                        ></div>
+                    </div>
+                    <span class='text-sm font-medium text-gray-900'>Sensor 2</span>
+                </div>
             </div>
         </div>
         <div class='border-t border-slate-400/20 px-4'>
@@ -180,6 +229,14 @@
         const startMotorBtn = document.getElementById('start-motor-btn')
         const directionMotorBtn = document.getElementById('direction-motor-btn')
         const alert = document.getElementById('alert')
+        const sensor1Status = document.getElementById('sensor-1-status')
+        const sensor1StatusBackground = document.getElementById('sensor-1-status-bg')
+        const sensor2Status = document.getElementById('sensor-2-status')
+        const sensor2StatusBackground = document.getElementById('sensor-2-status-bg')
+        const clockwiseDirectionStatus = document.getElementById('clockwise-direction-status')
+        const clockwiseDirectionStatusBackground = document.getElementById('clockwise-direction-status-background')
+        const anticlockwiseDirectionStatus = document.getElementById('anticlockwise-direction-status')
+        const anticlockwiseDirectionStatusBackground = document.getElementById('anticlockwise-direction-status-background')
 
         const connectionTime = new Date().getTime()
 
@@ -207,24 +264,26 @@
                         if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
-                            motorStatus.classList.remove('bg-red-500')
-                            motorStatus.classList.add('bg-emerald-500')
-                            motorStatusBackground.classList.remove('bg-red-200')
-                            motorStatusBackground.classList.add('bg-emerald-200')
+                            motorStatusIndicator(true)
                         } else {
                             motorWorking = false
                             startMotorBtn.checked = false
-                            motorStatus.classList.add('bg-red-500')
-                            motorStatus.classList.remove('bg-emerald-500')
-                            motorStatusBackground.classList.add('bg-red-200')
-                            motorStatusBackground.classList.remove('bg-emerald-200')
+                            motorStatusIndicator(false)
                         }
 
                         if (data.motorDirection === 'clockwise') {
                             motorDirection = true
+                            if (motorWorking) {
+                                motorAnticlockwiseDirectionIndicator(false)
+                                motorClockwiseDirectionIndicator(true)
+                            }
                             directionMotorBtn.checked = true
                         } else {
                             motorDirection = false
+                            if (motorWorking) {
+                                motorAnticlockwiseDirectionIndicator(true)
+                                motorClockwiseDirectionIndicator(false)
+                            }
                             directionMotorBtn.checked = false
                         }
                     }
@@ -233,24 +292,26 @@
                         if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
-                            motorStatus.classList.remove('bg-red-500')
-                            motorStatus.classList.add('bg-emerald-500')
-                            motorStatusBackground.classList.remove('bg-red-200')
-                            motorStatusBackground.classList.add('bg-emerald-200')
+                            motorStatusIndicator(true)
                         } else {
                             motorWorking = false
                             startMotorBtn.checked = false
-                            motorStatus.classList.add('bg-red-500')
-                            motorStatus.classList.remove('bg-emerald-500')
-                            motorStatusBackground.classList.add('bg-red-200')
-                            motorStatusBackground.classList.remove('bg-emerald-200')
+                            motorStatusIndicator(false)
                         }
 
                         if (data.motorDirection === 'clockwise') {
                             motorDirection = true
+                            if (motorWorking) {
+                                motorAnticlockwiseDirectionIndicator(false)
+                                motorClockwiseDirectionIndicator(true)
+                            }
                             directionMotorBtn.checked = true
                         } else {
                             motorDirection = false
+                            if (motorWorking) {
+                                motorAnticlockwiseDirectionIndicator(true)
+                                motorClockwiseDirectionIndicator(false)
+                            }
                             directionMotorBtn.checked = false
                         }
                     }
@@ -261,6 +322,36 @@
                                 time: new Date().getTime() - connectionTime,
                                 value: data.value
                             })
+                        }
+                    }
+
+                    if (event === 'sensorData') {
+                        if (data.sensor === 'sensor1') {
+                            if (data.value === '0') {
+                                sensor1Status.classList.remove('bg-gray-400')
+                                sensor1Status.classList.add('bg-emerald-500')
+                                sensor1StatusBackground.classList.remove('bg-gray-200')
+                                sensor1StatusBackground.classList.add('bg-emerald-200')
+                            } else {
+                                sensor1Status.classList.remove('bg-emerald-500')
+                                sensor1Status.classList.add('bg-gray-400')
+                                sensor1StatusBackground.classList.remove('bg-emerald-200')
+                                sensor1StatusBackground.classList.add('bg-gray-200')
+                            }
+                        }
+
+                        if (data.sensor === 'sensor2') {
+                            if (data.value === '0') {
+                                sensor2Status.classList.remove('bg-gray-400')
+                                sensor2Status.classList.add('bg-emerald-500')
+                                sensor2StatusBackground.classList.remove('bg-gray-200')
+                                sensor2StatusBackground.classList.add('bg-emerald-200')
+                            } else {
+                                sensor2Status.classList.remove('bg-emerald-500')
+                                sensor2Status.classList.add('bg-gray-400')
+                                sensor2StatusBackground.classList.remove('bg-emerald-200')
+                                sensor2StatusBackground.classList.add('bg-gray-200')
+                            } 
                         }
                     }
                 }
@@ -276,17 +367,21 @@
             if (node_name === nodeName) {
                 if (event === 'startMotorNode') {
                     motorWorking = true
-                    startMotorBtn.checked = true
-                    motorStatus.classList.remove('bg-red-500')
-                    motorStatus.classList.add('bg-emerald-500')
-                    motorStatusBackground.classList.remove('bg-red-200')
-                    motorStatusBackground.classList.add('bg-emerald-200')  
+                    motorStatusIndicator(true) 
 
                     if (data === 'clockwise') {
                         motorDirection = true
+                        if (motorWorking) {
+                            motorClockwiseDirectionIndicator(true)
+                            motorAnticlockwiseDirectionIndicator(false)
+                        }
                         directionMotorBtn.checked = true
                     } else {
                         motorDirection = false
+                        if (motorWorking) {
+                            motorClockwiseDirectionIndicator(false)
+                            motorAnticlockwiseDirectionIndicator(true)
+                        }
                         directionMotorBtn.checked = false
                     }
                 }
@@ -294,10 +389,9 @@
                 if (event === 'stopMotorNode') {
                     motorWorking = false
                     startMotorBtn.checked = false
-                    motorStatus.classList.add('bg-red-500')
-                    motorStatus.classList.remove('bg-emerald-500')
-                    motorStatusBackground.classList.add('bg-red-200')
-                    motorStatusBackground.classList.remove('bg-emerald-200')
+                    motorStatusIndicator(false)
+                    motorClockwiseDirectionIndicator(false)
+                    motorAnticlockwiseDirectionIndicator(false)
                 }
             }
         }
@@ -317,32 +411,42 @@
         const handleStartToggle = e => {
             if (e.target.checked) {
                 motorWorking = true
-                motorStatus.classList.remove('bg-red-500')
-                motorStatus.classList.add('bg-emerald-500')
-                motorStatusBackground.classList.remove('bg-red-200')
-                motorStatusBackground.classList.add('bg-emerald-200')
+                motorStatusIndicator(true)
                 if (motorDirection) {
+                    if (motorWorking) {
+                        motorClockwiseDirectionIndicator(true)
+                        motorAnticlockwiseDirectionIndicator(false)
+                    }
                     socket.send(JSON.stringify({ event: 'startMotor', data: 'clockwise', nodeName: node_name }))
                 } else {
+                    if (motorWorking) {
+                        motorClockwiseDirectionIndicator(false)
+                        motorAnticlockwiseDirectionIndicator(true)
+                    }
                     socket.send(JSON.stringify({ event: 'startMotor', data: 'anticlockwise', nodeName: node_name }))
                 }
             } else {
                 motorWorking = false
                 socket.send(JSON.stringify({ event: 'stopMotor', nodeName: node_name }))
-                motorStatus.classList.add('bg-red-500')
-                motorStatus.classList.remove('bg-emerald-500')
-                motorStatusBackground.classList.add('bg-red-200')
-                motorStatusBackground.classList.remove('bg-emerald-200')
+                motorStatusIndicator(false)
             }
         }
 
         const handleChangeDirectionToggle = e => {
             if (e.target.checked) {
                 motorDirection = true
-                if (motorWorking) socket.send(JSON.stringify({ event: 'startMotor', data: 'clockwise', nodeName: node_name }))
+                if (motorWorking) {
+                    motorClockwiseDirectionIndicator(true)
+                    motorAnticlockwiseDirectionIndicator(false)
+                    socket.send(JSON.stringify({ event: 'startMotor', data: 'clockwise', nodeName: node_name }))
+                }
             } else {
                 motorDirection = false
-                if (motorWorking) socket.send(JSON.stringify({ event: 'startMotor', data: 'anticlockwise', nodeName: node_name }))
+                if (motorWorking) {
+                    motorClockwiseDirectionIndicator(false)
+                    motorAnticlockwiseDirectionIndicator(true)
+                    socket.send(JSON.stringify({ event: 'startMotor', data: 'anticlockwise', nodeName: node_name }))
+                }
             }
         }
 
@@ -365,6 +469,33 @@
             nodeStatusPoint.classList.remove('bg-red-500')
             nodeStatusPoint.classList.remove('bg-emerald-500')
             nodeStatusPoint.classList.add(`bg-${status ? 'emerald' : 'red'}-500`)
+        }
+
+        const motorStatusIndicator = (status) => {
+            motorStatusBackground.classList.remove('bg-gray-200')
+            motorStatusBackground.classList.remove('bg-yellow-100')
+            status ?  motorStatusBackground.classList.add('bg-yellow-100') : motorStatusBackground.classList.add('bg-gray-200')
+            motorStatus.classList.remove('bg-gray-400')
+            motorStatus.classList.remove('bg-yellow-300')
+            status ?  motorStatus.classList.add('bg-yellow-300') : motorStatus.classList.add('bg-gray-400')
+        }
+
+        const motorClockwiseDirectionIndicator = (status) => {
+            clockwiseDirectionStatusBackground.classList.remove('bg-gray-200')
+            clockwiseDirectionStatusBackground.classList.remove('bg-emerald-200')
+            clockwiseDirectionStatusBackground.classList.add(`bg-${status ? 'emerald' : 'gray'}-200`)
+            clockwiseDirectionStatus.classList.remove('bg-gray-400')
+            clockwiseDirectionStatus.classList.remove('bg-emerald-500')
+            status ? clockwiseDirectionStatus.classList.add('bg-emerald-500') : clockwiseDirectionStatus.classList.add('bg-gray-400')
+        }
+
+        const motorAnticlockwiseDirectionIndicator = (status) => {
+            anticlockwiseDirectionStatusBackground.classList.remove('bg-gray-200')
+            anticlockwiseDirectionStatusBackground.classList.remove('bg-red-200')
+            anticlockwiseDirectionStatusBackground.classList.add(`bg-${status ? 'red' : 'gray'}-200`)
+            anticlockwiseDirectionStatus.classList.remove('bg-gray-400')
+            anticlockwiseDirectionStatus.classList.remove('bg-red-500')
+            status ? anticlockwiseDirectionStatus.classList.add('bg-red-500') : anticlockwiseDirectionStatus.classList.add('bg-gray-400')
         }
     </script>
 {{/layout}}
