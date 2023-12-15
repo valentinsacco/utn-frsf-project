@@ -37,7 +37,8 @@ export const websockets = (server: ServerType) => {
 
     ws.on('connection', (socket: CustomWebSocket) => {
 
-        socket.send(JSON.stringify({event: 'type', data: 'server'}))
+        // Indentificar que tipo de conexión es: 'client' o 'node'
+        socket.send(JSON.stringify({event: 'type', data: 'server'})) 
 
         // const pingInterval = setInterval(async () => {
         //     if (ping_time !== undefined && pong_time !== undefined) {
@@ -168,6 +169,7 @@ export const websockets = (server: ServerType) => {
                 }
             }
 
+            // Obtiene los valores iniciales de un nodo al conectarse el nodo
             if (event === 'initialStateNode') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
@@ -176,6 +178,7 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
+            // Obtiene los valores iniciales de un nodo al conectarse un nuevo cliente
             if (event === 'currentStateClient') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
@@ -192,17 +195,19 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
+            // Cambiar a continuousData
             if (event === 'continuous-data') {
                 ws.clients.forEach((client) => {
-                    if (client !== socket && client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'client', event: 'continuous-data', nodeName, data }))
+                    // Este if hace que se envién los datos a todos los clientes menos al que envía los datos
+                    if (client !== socket && client.readyState === OPEN) { // client !== socket
+                        client.send(JSON.stringify({ destination: 'client', event: 'continuous-data', nodeName, data }))   // Cambiar a continuousData
                     }
                 })
             }
 
             if (event === 'startMotor') {
                 ws.clients.forEach((client) => {
-                    if (client !== socket && client.readyState === OPEN) {
+                    if (client.readyState === OPEN) {
                         client.send(JSON.stringify({ event: 'startMotorNode', nodeName, data }))
                     }
                 })
@@ -210,7 +215,7 @@ export const websockets = (server: ServerType) => {
 
             if (event === 'stopMotor') {
                 ws.clients.forEach((client) => {
-                    if (client !== socket && client.readyState === OPEN) {
+                    if (client.readyState === OPEN) {
                         client.send(JSON.stringify({ event: 'stopMotorNode', nodeName, data }))
                     }
                 })

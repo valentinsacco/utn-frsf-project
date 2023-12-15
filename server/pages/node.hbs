@@ -126,7 +126,6 @@
         toolTip.style = `width: 96px; height: 80px; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 12px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 2px;font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;`
         toolTip.style.background = 'rgba(38, 198, 218, 0.2)'
         toolTip.style.color = 'black'
-        // toolTip.style.borderColor = '#eb4034'
         toolTip.style.borderColor = 'rgba(38, 198, 218, 1)'
         lwc.appendChild(toolTip)
 
@@ -184,6 +183,8 @@
         const startMotorBtn = document.getElementById('start-motor-btn')
         const directionMotorBtn = document.getElementById('direction-motor-btn')
 
+        const connectionTime = new Date().getTime()
+
         socket.onopen = () => {
             console.log('🎉 WS Connected')
 
@@ -204,8 +205,8 @@
 
             if (destination && destination === 'client') {
                 if (node_name === nodeName) {
-                    if (event === 'initialState') { // No funcionando del todo bien
-                        if (data.motorStatus) {
+                    if (event === 'initialState') {
+                        if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
                             motorStatus.classList.remove('bg-red-500')
@@ -231,7 +232,7 @@
                     }
 
                     if (event === 'currentState') {
-                        if (data.motorStatus) {
+                        if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
                             motorStatus.classList.remove('bg-red-500')
@@ -259,7 +260,7 @@
                     if (event === 'continuous-data') {
                         if (!isNaN(data.value)) {
                             areaChart.update({
-                                time: new Date().getTime(),
+                                time: new Date().getTime() - connectionTime,
                                 value: data.value
                             })
                         }
@@ -271,6 +272,34 @@
                     nodeStatus = nodeState.status
 
                     nodeStatusIndicator(nodeState.status)
+                }
+            }
+
+            if (node_name === nodeName) {
+                if (event === 'startMotorNode') {
+                    motorWorking = true
+                    startMotorBtn.checked = true
+                    motorStatus.classList.remove('bg-red-500')
+                    motorStatus.classList.add('bg-emerald-500')
+                    motorStatusBackground.classList.remove('bg-red-200')
+                    motorStatusBackground.classList.add('bg-emerald-200')  
+
+                    if (data === 'clockwise') {
+                        motorDirection = true
+                        directionMotorBtn.checked = true
+                    } else {
+                        motorDirection = false
+                        directionMotorBtn.checked = false
+                    }
+                }
+
+                if (event === 'stopMotorNode') {
+                    motorWorking = false
+                    startMotorBtn.checked = false
+                    motorStatus.classList.add('bg-red-500')
+                    motorStatus.classList.remove('bg-emerald-500')
+                    motorStatusBackground.classList.add('bg-red-200')
+                    motorStatusBackground.classList.remove('bg-emerald-200')
                 }
             }
         }
