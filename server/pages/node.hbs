@@ -1,5 +1,10 @@
 {{#> layout}}
     <div id="container" class='p-5 md:px-20 md:py-10'>
+        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+            <span class="font-semibold">Alerta!</span> Conexion perdida con el servidor.
+            <br/>
+            <span>Por favor recargue la página</span>
+        </div>
         <a href="/" class="mb-4 block">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.5 16.5999L7.06667 11.1666C6.425 10.5249 6.425 9.4749 7.06667 8.83324L12.5 3.3999" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
@@ -182,6 +187,7 @@
 
         const startMotorBtn = document.getElementById('start-motor-btn')
         const directionMotorBtn = document.getElementById('direction-motor-btn')
+        const alert = document.getElementById('alert')
 
         const connectionTime = new Date().getTime()
 
@@ -301,6 +307,18 @@
                     motorStatusBackground.classList.add('bg-red-200')
                     motorStatusBackground.classList.remove('bg-emerald-200')
                 }
+            }
+        }
+
+        socket.onerror = (error) => {
+            console.log('❌ WS Error: ', error)
+            alert.classList.remove('hidden')
+        }
+
+        socket.onclose = (event) => {
+            if (!event.wasClean) {
+                console.log('🔌 WS Closed: ', event)
+                alert.classList.remove('hidden')
             }
         }
 

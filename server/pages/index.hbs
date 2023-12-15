@@ -11,6 +11,11 @@
         </a>
     </nav>
     <main class='h-[calc(100vh-80px)] w-full px-5 md:px-20 py-10'>
+        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+            <span class="font-semibold">Alerta!</span> Conexion perdida con el servidor.
+            <br/>
+            <span>Por favor recargue la página</span>
+        </div>
         <h1 class='text-lg font-semibold mb-5'>Nodos en la red:</h1>
         <ul
             id='card-container'
@@ -19,6 +24,7 @@
     </main>
 <script>
     const cardContainer = document.getElementById('card-container')
+    const alert = document.getElementById('alert')
     const cardWidth = 180
 
     const setCardContainerGap = (winWidth) => {
@@ -61,6 +67,18 @@
                     cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
                 })
             }
+        }
+    }
+
+    socket.onerror = (error) => {
+        console.log('❌ WS Error: ', error)
+        alert.classList.remove('hidden')
+    }
+
+    socket.onclose = (event) => {
+        if (!event.wasClean) {
+            console.log('🔌 WS Closed: ', event)
+            alert.classList.remove('hidden')
         }
     }
 
