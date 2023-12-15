@@ -4,12 +4,11 @@ import WebSocket, { Server, OPEN } from 'ws'
 import prisma from './prisma'
 
 interface MeasuredValue {
-    value: number
-    timestamp: string
+    value: string
+    time: string
 }
 
 const pingIntervalTime = 1000
-const savedValues: number[] = []
 const measuredValues: MeasuredValue[] = []
 
 enum SocketType {
@@ -195,12 +194,18 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
-            // Cambiar a continuousData
-            if (event === 'continuous-data') {
+            if (event === 'continuousData') {
+                if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                    measuredValues.push({
+                        value: data.value,
+                        time: new Date().toISOString()
+                    })
+                }
+
                 ws.clients.forEach((client) => {
                     // Este if hace que se envién los datos a todos los clientes menos al que envía los datos
                     if (client !== socket && client.readyState === OPEN) { // client !== socket
-                        client.send(JSON.stringify({ destination: 'client', event: 'continuous-data', nodeName, data }))   // Cambiar a continuousData
+                        client.send(JSON.stringify({ destination: 'client', event: 'continuousData', nodeName, data }))   // Cambiar a continuousData
                     }
                 })
             }
@@ -221,157 +226,59 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
-            if (event === 'measure') {
-                
+            if (event === 'startMeasure') {
+                const { username, measureName, readedPin } = data
+
+                socket_id_under_measure = nodeName
+                start_measuring = true
+
+                try {
+                    const measure = await prisma.measure.create({
+                        data: {
+                            username,
+                            measureName,
+                            nodeName,
+                            readedPin
+                        }
+                    })
+
+                    measure_id = measure.id
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.log(error.message)
+                    }
+                    console.log(error)
+                }
             }
 
-            // if (event === 'continuous-data') {
-            //     const parsedValue = parseFloat(data)
-            //     const socket_id = payload
+            if (event === 'stopMeasure') {
+                start_measuring = false
 
-            //     if (!isNaN(parsedValue)) {
-            //         savedValues.push(parsedValue)
-            //         if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
-            //             measuredValues.push({
-            //                 value: parsedValue,
-            //                 timestamp: new Date().toISOString()
-            //             })
-            //         }
-  
-            //         // { socket_id: '001', values: [{ value: 0.5, timestamp: '10-11-23' }] }
-
-            //         // try {
-            //         //     if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
-            //         //         await prisma.value.create({
-            //         //             data: {
-            //         //                 value: parsedValue,
-            //         //                 measure: {
-            //         //                     connect: {
-            //         //                         id: measure_id
-            //         //                     }
-            //         //                 }
-            //         //             }
-            //         //         })
-            //         //     }
-            //         // } catch (error) {
-            //         //     if (error instanceof Error) {
-            //         //         console.log(error.message)
-            //         //     }
-            //         //     console.log(error)
-            //         // }
-
-            //         ws.clients.forEach((client) => {
-            //             if (client !== socket && client.readyState === OPEN) {
-            //                 client.send(
-            //                     `client:continuous-data:${data}/${socket_id}`
-            //                 )
-            //             }
-            //         })
-            //     }
-            // }
-
-            // if (event === 'direction') {
-            //     const direction = data
-            //     const socket_id = payload
-
-            //     if (direction === 'clockwise') {
-            //         ws.clients.forEach((client) => {
-            //             if ('socket_id' in client) {
-            //                 const customClient = client as CustomWebSocket
-
-            //                 if (customClient.readyState === OPEN) {
-            //                     if (customClient.socket_id === socket_id) {
-            //                         customClient.send('direction:clockwise')
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     } else {
-            //         ws.clients.forEach((client) => {
-            //             if ('socket_id' in client) {
-            //                 const customClient = client as CustomWebSocket
-
-            //                 if (customClient.readyState === OPEN) {
-            //                     if (customClient.socket_id === socket_id) {
-            //                         customClient.send('direction:anticlockwise')
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     }
-            // }
-
-            // if (event === 'stop-motor') {
-            //     const socket_id = payload
-
-            //     ws.clients.forEach((client) => {
-            //         if ('socket_id' in client) {
-            //             const customClient = client as CustomWebSocket
-
-            //             if (customClient.readyState === OPEN) {
-            //                 if (customClient.socket_id === socket_id) {
-            //                     customClient.send('stop-motor:true')
-            //                 }
-            //             }
-            //         }
-            //     })
-            // }
-
-            // if (event === 'measure') {
-            //     const measureStatus = data
-            //     const socket_id = payload
-
-            //     if (measureStatus === 'true') {
-            //         start_measuring = true
-            //         socket_id_under_measure = socket_id
-            //         // payload = 'socket_id; username; measure_name; readed_pin'
-    
-            //         try {
-            //             const measure = await prisma.measure.create({
-            //                 data: {
-            //                     username: 'test',
-            //                     measureName: 'test',
-            //                     nodeName: socket_id_under_measure,
-            //                     readedPin: 'A0',
-            //                 }
-            //             })
-    
-            //             measure_id = measure.id
-            //         } catch (error) {
-            //             if (error instanceof Error) {
-            //                 console.log(error.message)
-            //             }
-            //             console.log(error)
-            //         }
-            //     } else if (measureStatus === 'false') {
-            //         start_measuring = false
-
-            //         try {
-            //             for (const value of measuredValues) {
-            //                 await prisma.value.create({
-            //                     data: {
-            //                         value: value.value,
-            //                         timestamp: value.timestamp,
-            //                         measure: {
-            //                             connect: {
-            //                                 id: measure_id
-            //                             }
-            //                         }
-            //                     }
-            //                 })
-            //             }
-            //         } catch (error) {
-            //             if (error instanceof Error) {
-            //                 console.log(error.message)
-            //             }
-            //             console.log(error)
-            //         }
-                    
-            //         socket_id_under_measure = undefined
-            //         measure_id = undefined
-            //         measuredValues.length = 0
-            //     }
-            // }
+                try {
+                    for (const value of measuredValues) {
+                        await prisma.value.create({
+                            data: {
+                                value: parseFloat(value.value),
+                                timestamp: value.time,
+                                measure: {
+                                    connect: {
+                                        id: measure_id
+                                    }
+                                }
+                            }
+                        })
+                    }
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.log(error.message)
+                    }
+                    console.log(error)
+                }
+                
+                socket_id_under_measure = undefined
+                measure_id = undefined
+                measuredValues.length = 0
+            }
         })
 
         socket.on('error', (error) => {

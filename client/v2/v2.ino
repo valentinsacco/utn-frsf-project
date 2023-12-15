@@ -89,7 +89,7 @@ void loop() {
 
             StaticJsonDocument<200> doc;
             
-            doc["event"] = "continuous-data";
+            doc["event"] = "continuousData";
             doc["nodeName"] = NODE_NAME;
             JsonObject data = doc.createNestedObject("data");
 

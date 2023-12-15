@@ -165,21 +165,13 @@
                     ${timeToShow}
                     </div>`
 
-                const y = param.point.y + 272 // 272 is the offset of the chart
+                const y = param.point.y + 272
                 let left = param.point.x + toolTipMargin
-                if (left > lwc.clientWidth - toolTipWidth) {
+                if (left > (lwc.clientWidth - toolTipWidth)) {
                     left = param.point.x - toolTipMargin - toolTipWidth
                 }
 
-                let top
-                // if (top - 272 > lwc.clientHeight - toolTipHeight) {
-                //     top = y - toolTipHeight - toolTipMargin
-                // }
-
-                // console.log(y)
-                // console.log(lwc.clientHeight - toolTipHeight)
-
-                top = y - toolTipHeight - toolTipMargin
+                let top = y - toolTipHeight - toolTipMargin
                 toolTip.style.left = left + 'px'
                 toolTip.style.top = top + 'px'
             }
@@ -356,11 +348,11 @@
 
         measureBtn.addEventListener('click', () => {
             if (!isMeasureActive) {
-                socket.send(`measure:true:${node_name}`)
+                socket.send(JSON.stringify({ event: "startMeasure", nodeName: node_name, data: { username: 'test', measureName: 'test', readedPin: 'A0' } }))
                 isMeasureActive = true
                 measureBtn.innerHTML = 'Parar Medición'
             } else {
-                socket.send(`measure:false:${node_name}`)
+                socket.send(JSON.stringify({ event: "stopMeasure", nodeName: node_name }))
                 isMeasureActive = false
                 measureBtn.innerHTML = 'Empezar Medición'
             }
