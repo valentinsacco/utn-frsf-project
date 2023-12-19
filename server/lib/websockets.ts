@@ -211,14 +211,6 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
-            if (event === 'sensorData') {
-                ws.clients.forEach((client) => {
-                    if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'client', event: 'sensorData', nodeName, data }))
-                    }
-                })
-            }
-
             if (event === 'startMotor') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
@@ -231,6 +223,14 @@ export const websockets = (server: ServerType) => {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
                         client.send(JSON.stringify({ event: 'stopMotorNode', nodeName, data }))
+                    }
+                })
+            }
+
+            if (event === 'motorControl') {
+                ws.clients.forEach((client) => {
+                    if (client.readyState === OPEN) {
+                        client.send(JSON.stringify({ destination: 'node', event: 'motorControl', nodeName, data }))
                     }
                 })
             }

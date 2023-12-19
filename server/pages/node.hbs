@@ -58,9 +58,17 @@
                 </div>
             </div>
             <div class="flex flex-row gap-2 mb-4">
+                <span class="ms-3 text-sm font-medium text-gray-900">Local</span>
+                <label class="relative inline-flex items-center cursor-pointer ml-1.5">
+                    <input id="motor-control-btn" type="checkbox" value="" class="sr-only peer" onchange="handleMotorControl(event)" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-200"></div>
+                </label>
+                <span class="text-sm font-medium text-gray-900">Remoto</span>
+            </div>
+            <div class="flex flex-row gap-2 mb-4">
                 <span class="ms-3 text-sm font-medium text-gray-900">Apagado</span>
                 <label class="relative inline-flex items-center cursor-pointer ml-1.5">
-                    <input id="start-motor-btn" type="checkbox" value="" class="sr-only peer" onchange="handleStartToggle(event)">
+                    <input id="start-motor-btn" type="checkbox" value="" class="sr-only peer disabled:cursor-not-allowed" onchange="handleStartToggle(event)">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-200"></div>
                 </label>
                 <span class="text-sm font-medium text-gray-900">Encendido</span>
@@ -68,41 +76,10 @@
             <div class="flex flex-row gap-2 mb-4">
                 <span class="ms-3 text-sm font-medium text-gray-900">Retroceso</span>
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input id="direction-motor-btn" type="checkbox" value="" class="sr-only peer" onchange="handleChangeDirectionToggle(event)" checked>
+                    <input id="direction-motor-btn" type="checkbox" value="" class="sr-only peer disabled:cursor-not-allowed" onchange="handleChangeDirectionToggle(event)" checked>
                     <div class="w-11 h-6 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-200"></div>
                 </label>
                 <span class="text-sm font-medium text-gray-900">Avance</span>
-            </div>
-        </div>
-        <div class='border-t border-slate-400/20 mb-4 px-4'>
-            <div class='mt-4 mb-2'>
-                <h2 class='text-lg font-medium text-gray-600'>Sensores</h2>
-            </div>
-            <div class='flex flex-row gap-4'>
-                <div class='flex flex-col gap-2 justify-center items-center'>
-                    <div
-                        id='sensor-1-status-bg'
-                        class='h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
-                    >
-                        <div
-                            id='sensor-1-status'
-                            class='w-2 h-2 rounded-full bg-gray-400'
-                        ></div>
-                    </div>
-                    <span class='text-sm font-medium text-gray-900'>Sensor 1</span>
-                </div>
-                <div class='flex flex-col gap-2 justify-center items-center'>
-                    <div
-                        id='sensor-2-status-bg'
-                        class='h-3.5 w-3.5 rounded-full bg-gray-200 grid place-items-center'
-                    >
-                        <div
-                            id='sensor-2-status'
-                            class='w-2 h-2 rounded-full bg-gray-400'
-                        ></div>
-                    </div>
-                    <span class='text-sm font-medium text-gray-900'>Sensor 2</span>
-                </div>
             </div>
         </div>
         <div class='border-t border-slate-400/20 px-4'>
@@ -127,6 +104,7 @@
 
         let motorWorking = false
         let motorDirection = true   // true = avance, false = retroceso
+        let localMotorControl = false 
         let nodeStatus = true
         let isMeasureActive = false
         const toolTipWidth = 80
@@ -228,11 +206,8 @@
 
         const startMotorBtn = document.getElementById('start-motor-btn')
         const directionMotorBtn = document.getElementById('direction-motor-btn')
+        const motorControlBtn = document.getElementById('motor-control-btn')
         const alert = document.getElementById('alert')
-        const sensor1Status = document.getElementById('sensor-1-status')
-        const sensor1StatusBackground = document.getElementById('sensor-1-status-bg')
-        const sensor2Status = document.getElementById('sensor-2-status')
-        const sensor2StatusBackground = document.getElementById('sensor-2-status-bg')
         const clockwiseDirectionStatus = document.getElementById('clockwise-direction-status')
         const clockwiseDirectionStatusBackground = document.getElementById('clockwise-direction-status-background')
         const anticlockwiseDirectionStatus = document.getElementById('anticlockwise-direction-status')
@@ -261,6 +236,18 @@
             if (destination && destination === 'client') {
                 if (node_name === nodeName) {
                     if (event === 'initialState') {
+                        if (data.control.toLowerCase() == 'local') {
+                            localMotorControl = true
+                            motorControlBtn.checked = false
+                            startMotorBtn.disabled = true
+                            directionMotorBtn.disabled = true
+                        } else {
+                            localMotorControl = false
+                            motorControlBtn.checked = true
+                            startMotorBtn.disabled = false
+                            directionMotorBtn.disabled = false
+                        }
+
                         if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
@@ -289,6 +276,18 @@
                     }
 
                     if (event === 'currentState') {
+                        if (data.control.toLowerCase() == 'local') {
+                            localMotorControl = true
+                            motorControlBtn.checked = false
+                            startMotorBtn.disabled = true
+                            directionMotorBtn.disabled = true
+                        } else {
+                            localMotorControl = false
+                            motorControlBtn.checked = true
+                            startMotorBtn.disabled = false
+                            directionMotorBtn.disabled = false
+                        }
+
                         if (data.motorStatus.toLowerCase() === 'true') {
                             motorWorking = true
                             startMotorBtn.checked = true
@@ -324,37 +323,8 @@
                             })
                         }
                     }
-
-                    if (event === 'sensorData') {
-                        if (data.sensor === 'sensor1') {
-                            if (data.value === '0') {
-                                sensor1Status.classList.remove('bg-gray-400')
-                                sensor1Status.classList.add('bg-emerald-500')
-                                sensor1StatusBackground.classList.remove('bg-gray-200')
-                                sensor1StatusBackground.classList.add('bg-emerald-200')
-                            } else {
-                                sensor1Status.classList.remove('bg-emerald-500')
-                                sensor1Status.classList.add('bg-gray-400')
-                                sensor1StatusBackground.classList.remove('bg-emerald-200')
-                                sensor1StatusBackground.classList.add('bg-gray-200')
-                            }
-                        }
-
-                        if (data.sensor === 'sensor2') {
-                            if (data.value === '0') {
-                                sensor2Status.classList.remove('bg-gray-400')
-                                sensor2Status.classList.add('bg-emerald-500')
-                                sensor2StatusBackground.classList.remove('bg-gray-200')
-                                sensor2StatusBackground.classList.add('bg-emerald-200')
-                            } else {
-                                sensor2Status.classList.remove('bg-emerald-500')
-                                sensor2Status.classList.add('bg-gray-400')
-                                sensor2StatusBackground.classList.remove('bg-emerald-200')
-                                sensor2StatusBackground.classList.add('bg-gray-200')
-                            } 
-                        }
-                    }
                 }
+            
 
                 if (event === 'status') {
                     const nodeState = data.find(node => node.name === node_name)
@@ -405,6 +375,20 @@
             if (!event.wasClean) {
                 console.log('🔌 WS Closed: ', event)
                 alert.classList.remove('hidden')
+            }
+        }
+
+        const handleMotorControl = e => {
+            if (e.target.checked) {
+                localMotorControl = false
+                startMotorBtn.disabled = false
+                directionMotorBtn.disabled = false
+                socket.send(JSON.stringify({ event: 'motorControl', data: 'remote' }))
+            } else {
+                localMotorControl = true
+                startMotorBtn.disabled = true
+                directionMotorBtn.disabled = true
+                socket.send(JSON.stringify({ event: 'motorControl', data: 'local' }))
             }
         }
 

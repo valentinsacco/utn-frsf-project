@@ -35,10 +35,10 @@
 #define CLOCKWISE_DIRECTION_LED 5
 #define ANTICLOCKWISE_DIRECTION_LED 16
 
-// --- Datos de Sensores ---
+// --- Datos de Control Local ---
 
-#define SENSOR_1 0
-#define SENSOR_2 2
+#define START_MOTOR_BTN 0
+#define STOP_MOTOR_BTN 2
 
 // --- Cliente WebSockets ---
 
@@ -56,8 +56,7 @@ int stepCounter = 0;
 const int numSteps = NUM_STEPS;
 const int stepsLookup[NUM_STEPS] = STEPS_LOOKUP;
 
-bool sensor1LastState = true;
-bool sensor2LastState = true;
+bool localMotorControl = true;
 
 void setup() {
     Serial.begin(115200);
@@ -77,9 +76,9 @@ void setup() {
 
     // --- Configurando entradas ---
 
-    // Sensores
-    pinMode(SENSOR_1, INPUT);
-    pinMode(SENSOR_2, INPUT);
+    // Control del Motor
+    pinMode(START_MOTOR_BTN, INPUT);
+    pinMode(STOP_MOTOR_BTN, INPUT);
 
     WiFi.begin(SSID, PASSWORD);
 
@@ -100,87 +99,29 @@ void loop() {
 
     webSocket.loop();
 
-    bool sensor1State = digitalRead(SENSOR_1);
-    bool sensor2State = digitalRead(SENSOR_2);
+    if (localMotorControl) {
+        bool startMotorBtn = digitalRead(START_MOTOR_BTN);
+        bool stopMotorBtn = digitalRead(STOP_MOTOR_BTN);
+
+        if (startMotorBtn == HIGH) {
+            motorWorking = true;
+        } else if (stopMotorBtn === HIGH) {
+            motorWorking = false;
+        }
+    }
+
+    if (motorWorking) {
+        if (motorDirection) {
+            clockwise();
+            delayMicroseconds(MOTOR_SPEED);
+        }
+        else {
+            anticlockwise();
+            delayMicroseconds(MOTOR_SPEED);
+        }
+    }
 
     if (connectedToServer) {
-        if (motorWorking) {
-            if (motorDirection) {
-                clockwise();
-                delayMicroseconds(MOTOR_SPEED);
-            }
-            else {
-                anticlockwise();
-                delayMicroseconds(MOTOR_SPEED);
-            }
-        }
-
-        if (sensor1State != sensor1LastState) {
-             if (sensor1State == HIGH) {
-                StaticJsonDocument<200> doc;
-
-                doc["event"] = "sensorData";
-                doc["nodeName"] = NODE_NAME;
-                JsonObject data = doc.createNestedObject("data");
-
-                data["sensor"] = "sensor1";
-                data["value"] = String(sensor1State);
-
-                char object[200];
-                serializeJson(doc, object);
-                
-                webSocket.sendTXT(object);
-            } else {
-                StaticJsonDocument<200> doc;
-
-                doc["event"] = "sensorData";
-                doc["nodeName"] = NODE_NAME;
-                JsonObject data = doc.createNestedObject("data");
-
-                data["sensor"] = "sensor1";
-                data["value"] = String(sensor1State);
-
-                char object[200];
-                serializeJson(doc, object);
-                
-                webSocket.sendTXT(object);
-            }
-            sensor1LastState = sensor1State;
-        }
-       
-        if (sensor2State != sensor2LastState) {
-            if (sensor2State == HIGH) {
-                StaticJsonDocument<200> doc;
-
-                doc["event"] = "sensorData";
-                doc["nodeName"] = NODE_NAME;
-                JsonObject data = doc.createNestedObject("data");
-
-                data["sensor"] = "sensor2";
-                data["value"] = String(sensor2State);
-
-                char object[200];
-                serializeJson(doc, object);
-                
-                webSocket.sendTXT(object);
-            } else {
-                StaticJsonDocument<200> doc;
-
-                doc["event"] = "sensorData";
-                doc["nodeName"] = NODE_NAME;
-                JsonObject data = doc.createNestedObject("data");
-
-                data["sensor"] = "sensor2";
-                data["value"] = String(sensor2State);
-
-                char object[200];
-                serializeJson(doc, object);
-                
-                webSocket.sendTXT(object);
-            }
-            sensor2LastState = sensor2State;
-        }
-
         if ((currentTime - lastAnalogPinReadTime) >= 500) {
             int A0Value = analogRead(A0);
 
@@ -220,6 +161,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             JsonObject data = doc.createNestedObject("data");
             data["motorStatus"] = parseBooleanToString(motorWorking);
             data["motorDirection"] = motorDirection ? "clockwise" : "anticlockwise";
+            data["control"] = localMotorControl ? "local" : "remote";
 
             char object[200];
             serializeJson(doc, object);
@@ -280,36 +222,40 @@ void handleWebSocketConnection(char *message) {
 
         if (strcmp(nodeName.c_str(), NODE_NAME) == 0) {
             if (strcmp(event.c_str(), "startMotorNode") == 0) {
-                if (value == "clockwise") {
-                    Serial.println("[DigitalPin]: Motor girando en sentindo de las agujas del reloj");
-                    motorDirection = true;
-                    motorWorking = true;
-                    digitalWrite(MOTOR_STATUS_LED, HIGH);
-                    digitalWrite(CLOCKWISE_DIRECTION_LED, HIGH);
-                    digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
-                    clockwise();
-                }
-                else if (value == "anticlockwise") {
-                    Serial.println("[DigitalPin]: Motor girando en sentindo contrario a las agujas del reloj");
-                    motorDirection = false;
-                    motorWorking = true;
-                    digitalWrite(MOTOR_STATUS_LED, HIGH);
-                    digitalWrite(ANTICLOCKWISE_DIRECTION_LED, HIGH);
-                    digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
-                    anticlockwise();
+                if (!localMotorControl) {
+                    if (value == "clockwise") {
+                        Serial.println("[DigitalPin]: Motor girando en sentindo de las agujas del reloj");
+                        motorDirection = true;
+                        motorWorking = true;
+                        digitalWrite(MOTOR_STATUS_LED, HIGH);
+                        digitalWrite(CLOCKWISE_DIRECTION_LED, HIGH);
+                        digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
+                        clockwise();
+                    }
+                    else if (value == "anticlockwise") {
+                        Serial.println("[DigitalPin]: Motor girando en sentindo contrario a las agujas del reloj");
+                        motorDirection = false;
+                        motorWorking = true;
+                        digitalWrite(MOTOR_STATUS_LED, HIGH);
+                        digitalWrite(ANTICLOCKWISE_DIRECTION_LED, HIGH);
+                        digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
+                        anticlockwise();
+                    }
                 }
             }
 
             if (strcmp(event.c_str(), "stopMotorNode") == 0) {
-                Serial.println("[DigitalPin]: Motor parado");
-                digitalWrite(MOTOR_STATUS_LED, LOW);
-                digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
-                digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
-                motorWorking = false;
+                if (!localMotorControl) {
+                    Serial.println("[DigitalPin]: Motor parado");
+                    digitalWrite(MOTOR_STATUS_LED, LOW);
+                    digitalWrite(ANTICLOCKWISE_DIRECTION_LED, LOW);
+                    digitalWrite(CLOCKWISE_DIRECTION_LED, LOW);
+                    motorWorking = false;
+                }
             }
 
             if (strcmp(event.c_str(), "currentStateNode") == 0) {
-                Serial.println("[DigitalPin]: Estado actual del nodo");
+                Serial.println("[DigitalPin]: Enviando estado actual del nodo");
                 StaticJsonDocument<200> doc;
 
                 doc["event"] = "currentStateNode";
@@ -318,11 +264,20 @@ void handleWebSocketConnection(char *message) {
                 JsonObject data = doc.createNestedObject("data");
                 data["motorStatus"] = parseBooleanToString(motorWorking);
                 data["motorDirection"] = motorDirection ? "clockwise" : "anticlockwise";
+                data["control"] = localMotorControl ? "local" : "remote";
 
                 char object[200];
                 serializeJson(doc, object);
 
                 webSocket.sendTXT(object);
+            }
+
+            if (strcmp(event.c_str(), "motorControl") == 0) {
+                if (value == "local") {
+                    localMotorControl = true;
+                } else if (value == "remote") {
+                    localMotorControl = false;
+                }
             }
         }
     }
