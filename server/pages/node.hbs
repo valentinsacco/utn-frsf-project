@@ -1,11 +1,11 @@
 {{#> layout}}
     <div id="container" class='p-5 md:px-20 md:py-10'>
-        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg" role="alert">
             <span class="font-semibold">Alerta!</span> Conexion perdida con el servidor.
             <br/>
             <span>Por favor recargue la página</span>
         </div>
-        <a href="/" class="mb-4 block">
+        <a href="/" class="block mb-4">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.5 16.5999L7.06667 11.1666C6.425 10.5249 6.425 9.4749 7.06667 8.83324L12.5 3.3999" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -22,11 +22,11 @@
             </div>
             <h1 id='node-name' class='text-xl text-gray-800 capitalize'></h1>
         </div>
-        <div class='mt-4 px-4 mb-4'>
+        <div class='px-4 mt-4 mb-4'>
             <h2 class='mb-2 text-lg font-medium text-gray-600'>Medición:</h2>
             <button id="measure-btn" class="px-4 text-gray-600 bg-gray-200 rounded-md cursor-pointer h-11">Empezar Medición</button>
         </div>
-        <div class='border-t border-slate-400/20 mb-4 px-4'>
+        <div class='px-4 mb-4 border-t border-slate-400/20'>
             <div class='flex flex-row items-center mt-4 mb-2'>
                 <h2 class='text-lg font-medium text-gray-600'>Motor</h2>
                 <div
@@ -35,7 +35,7 @@
                 >
                     <div
                         id='motor-status'
-                        class='w-2 h-2 rounded-full bg-gray-400'
+                        class='w-2 h-2 bg-gray-400 rounded-full'
                     ></div>
                 </div>
                 <div
@@ -44,7 +44,7 @@
                 >
                     <div
                         id='clockwise-direction-status'
-                        class='w-2 h-2 rounded-full bg-gray-400'
+                        class='w-2 h-2 bg-gray-400 rounded-full'
                     ></div>
                 </div>
                 <div
@@ -53,12 +53,12 @@
                 >
                     <div
                         id='anticlockwise-direction-status'
-                        class='w-2 h-2 rounded-full bg-gray-400'
+                        class='w-2 h-2 bg-gray-400 rounded-full'
                     ></div>
                 </div>
             </div>
             <div class="flex flex-row gap-2 mb-4">
-                <span class="ms-3 text-sm font-medium text-gray-900">Local</span>
+                <span class="text-sm font-medium text-gray-900 ms-3">Local</span>
                 <label class="relative inline-flex items-center cursor-pointer ml-1.5">
                     <input id="motor-control-btn" type="checkbox" value="" class="sr-only peer" onchange="handleMotorControl(event)" checked>
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-200"></div>
@@ -66,7 +66,7 @@
                 <span class="text-sm font-medium text-gray-900">Remoto</span>
             </div>
             <div class="flex flex-row gap-2 mb-4">
-                <span class="ms-3 text-sm font-medium text-gray-900">Apagado</span>
+                <span class="text-sm font-medium text-gray-900 ms-3">Apagado</span>
                 <label class="relative inline-flex items-center cursor-pointer ml-1.5">
                     <input id="start-motor-btn" type="checkbox" value="" class="sr-only peer disabled:cursor-not-allowed" onchange="handleStartToggle(event)">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-200"></div>
@@ -74,7 +74,7 @@
                 <span class="text-sm font-medium text-gray-900">Encendido</span>
             </div>
             <div class="flex flex-row gap-2 mb-4">
-                <span class="ms-3 text-sm font-medium text-gray-900">Retroceso</span>
+                <span class="text-sm font-medium text-gray-900 ms-3">Retroceso</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input id="direction-motor-btn" type="checkbox" value="" class="sr-only peer disabled:cursor-not-allowed" onchange="handleChangeDirectionToggle(event)" checked>
                     <div class="w-11 h-6 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-200"></div>
@@ -82,7 +82,7 @@
                 <span class="text-sm font-medium text-gray-900">Avance</span>
             </div>
         </div>
-        <div class='border-t border-slate-400/20 px-4'>
+        <div class='px-4 border-t border-slate-400/20'>
             <h2 class='mt-4 mb-2 text-lg font-medium text-gray-600'>Gráfico:</h2>
             <div id='lwc'></div>
         </div>
@@ -383,12 +383,12 @@
                 localMotorControl = false
                 startMotorBtn.disabled = false
                 directionMotorBtn.disabled = false
-                socket.send(JSON.stringify({ event: 'motorControl', data: 'remote' }))
+                socket.send(JSON.stringify({ event: 'motorControl', data: 'remote', nodeName: node_name }))
             } else {
                 localMotorControl = true
                 startMotorBtn.disabled = true
                 directionMotorBtn.disabled = true
-                socket.send(JSON.stringify({ event: 'motorControl', data: 'local' }))
+                socket.send(JSON.stringify({ event: 'motorControl', data: 'local', nodeName: node_name }))
             }
         }
 

@@ -105,7 +105,7 @@ export const websockets = (server: ServerType) => {
 
             const { event, data } = message
             const nodeName = message?.nodeName
-            
+
             // if (event === 'ping') {
             //     const end_time: number = Date.now()
             //     latency = end_time - ping_time!
@@ -177,7 +177,6 @@ export const websockets = (server: ServerType) => {
                 })
             }
 
-            // Obtiene los valores iniciales de un nodo al conectarse un nuevo cliente
             if (event === 'currentStateClient') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
@@ -229,6 +228,7 @@ export const websockets = (server: ServerType) => {
 
             if (event === 'motorControl') {
                 ws.clients.forEach((client) => {
+                    console.log('⚙ [server]: Planta en estado', data)
                     if (client.readyState === OPEN) {
                         client.send(JSON.stringify({ destination: 'node', event: 'motorControl', nodeName, data }))
                     }
