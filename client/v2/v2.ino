@@ -198,9 +198,9 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
   case WStype_TEXT:
     handleWebSocketConnection((char *)payload);
     break;
-  case WStype_PING:
-    webSocket.sendTXT("ping:pong");
-  }
+  // case WStype_PING:
+  //   webSocket.sendTXT("ping:pong");
+  // }
 }
 
 void handleWebSocketConnection(char *message)
@@ -245,10 +245,19 @@ void handleWebSocketConnection(char *message)
 
   if (event != NULL && destination.c_str() != "client" && value != NULL)
   {
-    // if (strcmp(event, "ping") == 0)
-    // {
-    //     webSocket.sendTXT("pong:client");
-    // }
+    if (strcmp(event.c_str(), "ping") == 0)
+    {
+      StaticJsonDocument<200> doc;
+
+      doc["event"] = "pong";
+      doc["nodeName"] = NODE_NAME;
+      doc["data"] = value;
+
+      char object[200];
+      serializeJson(doc, object);
+
+      webSocket.sendTXT(object);
+    }
 
     if (strcmp(event.c_str(), "type") == 0)
     {
@@ -398,6 +407,13 @@ void handleLocalControl()
 
 //   Serial.print("Dirección del Motor: ");
 //   Serial.println(motorDirection ? "Avance" : "Retroceso");
+// }
+
+// char *parseJSONToString(JsonObject object)
+// {
+//   char buffer[200];
+//   serializeJson(object, buffer);
+//   return buffer;
 // }
 
 String parseBooleanToString(bool variable)

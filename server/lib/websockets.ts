@@ -3,6 +3,8 @@ import WebSocket, { Server, OPEN } from 'ws'
 
 import prisma from './prisma'
 
+const DEBUG = process.env.NODE_ENV === 'development' || true
+
 interface MeasuredValue {
     value: string
     time: string
@@ -22,7 +24,7 @@ interface CustomWebSocket extends WebSocket {
 
 export const websockets = (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
-    
+
     let node_name: string | undefined = undefined
     let ping_time: number = Date.now()
     let pong_time: number | undefined = undefined
@@ -34,10 +36,15 @@ export const websockets = (server: ServerType) => {
     let socket_id_under_measure: string | undefined = undefined
     let measure_id: number | undefined = undefined
 
-    ws.on('connection', (socket: CustomWebSocket) => {
-
+    ws.on('connection', async (socket: CustomWebSocket) => {
         // Indentificar que tipo de conexión es: 'client' o 'node'
-        socket.send(JSON.stringify({event: 'type', data: 'server'})) 
+        socket.send(JSON.stringify({ event: 'type', data: 'server' }))
+
+        setInterval(() => {
+            const currentTime = Date.now()
+            socket.send(JSON.stringify({ event: 'ping', data: currentTime }))
+            ping_time = currentTime
+        }, pingIntervalTime)
 
         // const pingInterval = setInterval(async () => {
         //     if (ping_time !== undefined && pong_time !== undefined) {
@@ -106,11 +113,17 @@ export const websockets = (server: ServerType) => {
             const { event, data } = message
             const nodeName = message?.nodeName
 
-            // if (event === 'ping') {
-            //     const end_time: number = Date.now()
-            //     latency = end_time - ping_time!
-            //     pong_time = end_time
-            // }
+            if (event === 'pong') {
+                const end_time: number = Date.now()
+                latency = end_time - ping_time!
+                pong_time = end_time
+
+                if (DEBUG) {
+                    console.log(pong_time, ' - ', ping_time)
+                    
+                    console.log(`🏓 [server]: Latencia (${nodeName}): ${latency}ms`)
+                }
+            }
 
             if (event === 'type') {
                 if (data === 'node') {
@@ -131,12 +144,18 @@ export const websockets = (server: ServerType) => {
                                 status: true
                             }
                         })
-    
+
                         const nodes = await prisma.node.findMany()
-    
+
                         ws.clients.forEach((client) => {
                             if (client.readyState === OPEN) {
-                                client.send(JSON.stringify({ destination: 'client', event: 'status', data: nodes }))
+                                client.send(
+                                    JSON.stringify({
+                                        destination: 'client',
+                                        event: 'status',
+                                        data: nodes
+                                    })
+                                )
                             }
                         })
                     } catch (error) {
@@ -156,7 +175,13 @@ export const websockets = (server: ServerType) => {
 
                         ws.clients.forEach((client) => {
                             if (client.readyState === OPEN) {
-                                client.send(JSON.stringify({ destination: 'client', event: 'status', data: nodes }))
+                                client.send(
+                                    JSON.stringify({
+                                        destination: 'client',
+                                        event: 'status',
+                                        data: nodes
+                                    })
+                                )
                             }
                         })
                     } catch (error) {
@@ -172,7 +197,14 @@ export const websockets = (server: ServerType) => {
             if (event === 'initialStateNode') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'client', event: 'initialState', nodeName, data }))
+                        client.send(
+                            JSON.stringify({
+                                destination: 'client',
+                                event: 'initialState',
+                                nodeName,
+                                data
+                            })
+                        )
                     }
                 })
             }
@@ -180,7 +212,13 @@ export const websockets = (server: ServerType) => {
             if (event === 'currentStateClient') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'node', event: 'currentStateNode', nodeName: data }))
+                        client.send(
+                            JSON.stringify({
+                                destination: 'node',
+                                event: 'currentStateNode',
+                                nodeName: data
+                            })
+                        )
                     }
                 })
             }
@@ -188,14 +226,24 @@ export const websockets = (server: ServerType) => {
             if (event === 'currentStateNode') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'client', event: 'currentState', nodeName, data }))
+                        client.send(
+                            JSON.stringify({
+                                destination: 'client',
+                                event: 'currentState',
+                                nodeName,
+                                data
+                            })
+                        )
                     }
                 })
             }
 
             // Obtiene los valores leidos por el puerto analóogico A0
             if (event === 'continuousData') {
-                if (start_measuring && typeof socket_id_under_measure !== 'undefined') {
+                if (
+                    start_measuring &&
+                    typeof socket_id_under_measure !== 'undefined'
+                ) {
                     measuredValues.push({
                         value: data.value,
                         time: new Date().toISOString()
@@ -204,8 +252,16 @@ export const websockets = (server: ServerType) => {
 
                 ws.clients.forEach((client) => {
                     // Este if hace que se envién los datos a todos los clientes menos al que envía los datos
-                    if (client !== socket && client.readyState === OPEN) { // client !== socket
-                        client.send(JSON.stringify({ destination: 'client', event: 'continuousData', nodeName, data }))   // Cambiar a continuousData
+                    if (client !== socket && client.readyState === OPEN) {
+                        // client !== socket
+                        client.send(
+                            JSON.stringify({
+                                destination: 'client',
+                                event: 'continuousData',
+                                nodeName,
+                                data
+                            })
+                        ) // Cambiar a continuousData
                     }
                 })
             }
@@ -213,7 +269,13 @@ export const websockets = (server: ServerType) => {
             if (event === 'startMotor') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ event: 'startMotorNode', nodeName, data }))
+                        client.send(
+                            JSON.stringify({
+                                event: 'startMotorNode',
+                                nodeName,
+                                data
+                            })
+                        )
                     }
                 })
             }
@@ -221,7 +283,13 @@ export const websockets = (server: ServerType) => {
             if (event === 'stopMotor') {
                 ws.clients.forEach((client) => {
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ event: 'stopMotorNode', nodeName, data }))
+                        client.send(
+                            JSON.stringify({
+                                event: 'stopMotorNode',
+                                nodeName,
+                                data
+                            })
+                        )
                     }
                 })
             }
@@ -230,7 +298,14 @@ export const websockets = (server: ServerType) => {
                 ws.clients.forEach((client) => {
                     console.log('⚙ [server]: Planta en estado', data)
                     if (client.readyState === OPEN) {
-                        client.send(JSON.stringify({ destination: 'node', event: 'motorControl', nodeName, data }))
+                        client.send(
+                            JSON.stringify({
+                                destination: 'node',
+                                event: 'motorControl',
+                                nodeName,
+                                data
+                            })
+                        )
                     }
                 })
             }
@@ -283,7 +358,7 @@ export const websockets = (server: ServerType) => {
                     }
                     console.log(error)
                 }
-                
+
                 socket_id_under_measure = undefined
                 measure_id = undefined
                 measuredValues.length = 0
