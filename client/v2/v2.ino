@@ -200,7 +200,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     break;
   // case WStype_PING:
   //   webSocket.sendTXT("ping:pong");
-  // }
+  }
 }
 
 void handleWebSocketConnection(char *message)

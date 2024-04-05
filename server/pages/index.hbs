@@ -1,5 +1,5 @@
 {{#> layout}}
-    <nav class='h-20 w-full px-5 md:px-20 flex flex-row items-center justify-between'>
+    <nav class='flex flex-row items-center justify-between w-full h-20 px-5 md:px-20'>
         <img
             src='https://www.frsf.utn.edu.ar/templates/utn17/img/utnsantafe-color.png'
             class='h-5 md:h-10'
@@ -11,20 +11,21 @@
         </a>
     </nav>
     <main class='h-[calc(100vh-80px)] w-full px-5 md:px-20 py-10'>
-        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+        <div id="alert" class="hidden p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg" role="alert">
             <span class="font-semibold">Alerta!</span> Conexion perdida con el servidor.
             <br/>
             <span>Por favor recargue la página</span>
         </div>
-        <h1 class='text-lg font-semibold mb-5'>Nodos en la red:</h1>
+        <h1 class='mb-5 text-lg font-semibold'>Nodos en la red:</h1>
         <ul
             id='card-container'
-            class='grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 2xl:grid-cols-9 gap-2 xl:gap-6 w-full'
+            class='grid w-full grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 2xl:grid-cols-9 xl:gap-6'
         ></ul>
     </main>
 <script>
     const cardContainer = document.getElementById('card-container')
     const alert = document.getElementById('alert')
+
     const cardWidth = 180
 
     const setCardContainerGap = (winWidth) => {
@@ -51,8 +52,11 @@
     socket.onmessage = (e) => {
         const msg = JSON.parse(e.data)
 
+        if (msg.destination !== 'client') return
+
         const event = msg.event
         const data = msg.data
+        const nodeName = msg.nodeName
 
         if (event === 'type') {
             socket.send(JSON.stringify({ event: 'type', data: 'client' }))
@@ -61,12 +65,19 @@
         if (event === 'status') {
             cardContainer.innerHTML = ''
             if (data.length === 0) {
-                cardContainer.innerHTML += `<span class='ml-4 col-span-4'>No hay nodos conectados</span>`
+                cardContainer.innerHTML += `<span class='col-span-4 ml-4'>No hay nodos conectados</span>`
             } else {
                 data.forEach(node => {
                     cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status })
                 })
             }
+        }
+
+        if (event === 'nodeLatency') {
+            cardContainer.innerHTML = ''
+            data.forEach(node => {
+                cardContainer.innerHTML += cardTemplate({ nodeName: node.name, status: node.status, latency: node.latency })
+            })
         }
     }
 
@@ -82,14 +93,14 @@
         }
     }
 
-    const cardTemplate = ({ nodeName, status }) => (`
+    const cardTemplate = ({ nodeName, status, latency = null }) => (`
             <li
-                class='rounded-lg bg-white col-span-1 shadow-md h-28 w-full cursor-pointer'
+                class='w-full col-span-1 bg-white rounded-lg shadow-md cursor-pointer h-28'
             >
-                <a href='${status ? `/node/${nodeName}` : '/'}' class='block h-28 w-full'>
-                    <div class='py-2 px-4 flex flex-col justify-between h-full w-full'>
+                <a href='${status ? `/node/${nodeName}` : '/'}' class='block w-full h-28'>
+                    <div class='flex flex-col justify-between w-full h-full px-4 py-2'>
                         <div
-                            class='flex flex-row justify-between items-center w-full'
+                            class='flex flex-row items-center justify-between w-full'
                         >
                             <span
                                 class='text-base text-gray-800'
@@ -105,7 +116,7 @@
                         <div>
                             <span
                                 class='block text-sm text-gray-700'
-                            >latencia:</span>
+                            >latencia: ${latency}${latency === null ? '' : 'ms'}</span>
                         </div>
                     </div>
                 </a>

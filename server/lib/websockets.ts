@@ -1,5 +1,6 @@
 import { Server as ServerType } from 'http'
 import WebSocket, { Server, OPEN } from 'ws'
+import { Node } from '@prisma/client'
 
 import prisma from './prisma'
 
@@ -35,6 +36,7 @@ export const websockets = (server: ServerType) => {
     let start_measuring: boolean = false
     let socket_id_under_measure: string | undefined = undefined
     let measure_id: number | undefined = undefined
+    let nodes: Node[] = []
 
     ws.on('connection', async (socket: CustomWebSocket) => {
         // Indentificar que tipo de conexión es: 'client' o 'node'
@@ -45,67 +47,6 @@ export const websockets = (server: ServerType) => {
             socket.send(JSON.stringify({ event: 'ping', data: currentTime }))
             ping_time = currentTime
         }, pingIntervalTime)
-
-        // const pingInterval = setInterval(async () => {
-        //     if (ping_time !== undefined && pong_time !== undefined) {
-        //         if (
-        //             Date.now() - ping_time > pingIntervalTime &&
-        //             last_pong_time === pong_time
-        //         ) {
-        //             if (node_name) {
-        //                 try {
-        //                     await prisma.node.update({
-        //                         where: {
-        //                             name: node_name
-        //                         },
-        //                         data: {
-        //                             status: false
-        //                         }
-        //                     })
-        //                 } catch (error) {
-        //                     if (error instanceof Error) {
-        //                         console.log(error.message)
-        //                     }
-        //                     console.log(error)
-        //                 }
-        //             }
-
-        //             console.log(`🙁 [server]: Nodo ${node_name} desconectado`)
-
-        //             try {
-        //                 const nodes = await prisma.node.findMany()
-        //                 ws.clients.forEach((client) => {
-        //                     if (client.readyState === OPEN) {
-        //                         client.send(
-        //                             `client:status:${JSON.stringify(nodes)}`
-        //                         )
-        //                     }
-        //                 })
-        //                 node_disconnected = true
-        //                 clearInterval(pingInterval)
-        //             } catch (error) {
-        //                 if (error instanceof Error) {
-        //                     console.log(error.message)
-        //                 }
-        //                 console.log(error)
-        //             }
-        //         } else {
-        //             ping_time = Date.now()
-        //             socket.ping()
-        //         }
-        //     } else {
-        //         ping_time = Date.now()
-        //         socket.ping()
-        //     }
-        // }, pingIntervalTime)
-
-        // const pongInterval = setInterval(() => {
-        //     if (node_disconnected) {
-        //         clearInterval(pongInterval)
-        //     }
-
-        //     last_pong_time = pong_time
-        // }, pingIntervalTime)
 
         socket.on('message', async (msg: string) => {
             const message = JSON.parse(msg)
@@ -123,6 +64,30 @@ export const websockets = (server: ServerType) => {
                     
                     console.log(`🏓 [server]: Latencia (${nodeName}): ${latency}ms`)
                 }
+
+                const nodeWithLatency = nodes.map(node => {
+                    if (node.name === nodeName) {
+                        return {
+                            ...node,
+                            status: latency && latency > 500 ? false : true,
+                            latency
+                        }
+                    }
+                    return { ...node, latency: null }
+                })
+
+                ws.clients.forEach((client) => {
+                    if (client.readyState === OPEN) {
+                        client.send(
+                            JSON.stringify({
+                                destination: 'client',
+                                event: 'nodeLatency',
+                                nodeName,
+                                data: nodeWithLatency
+                            })
+                        )
+                    }
+                })
             }
 
             if (event === 'type') {
@@ -145,7 +110,9 @@ export const websockets = (server: ServerType) => {
                             }
                         })
 
-                        const nodes = await prisma.node.findMany()
+                        const nodesFromDB = await prisma.node.findMany()
+
+                        nodes = nodesFromDB
 
                         ws.clients.forEach((client) => {
                             if (client.readyState === OPEN) {
@@ -153,7 +120,7 @@ export const websockets = (server: ServerType) => {
                                     JSON.stringify({
                                         destination: 'client',
                                         event: 'status',
-                                        data: nodes
+                                        data: nodesFromDB
                                     })
                                 )
                             }
@@ -171,7 +138,9 @@ export const websockets = (server: ServerType) => {
                     console.log('🎉 [server]: Nuevo cliente conectado')
 
                     try {
-                        const nodes = await prisma.node.findMany()
+                        const nodesFromDB = await prisma.node.findMany()
+
+                        nodes = nodesFromDB
 
                         ws.clients.forEach((client) => {
                             if (client.readyState === OPEN) {
@@ -179,7 +148,7 @@ export const websockets = (server: ServerType) => {
                                     JSON.stringify({
                                         destination: 'client',
                                         event: 'status',
-                                        data: nodes
+                                        data: nodesFromDB
                                     })
                                 )
                             }
