@@ -52,15 +52,16 @@
     socket.onmessage = (e) => {
         const msg = JSON.parse(e.data)
 
-        if (msg.destination !== 'client') return
-
         const event = msg.event
         const data = msg.data
         const nodeName = msg.nodeName
+        const destination = msg.destination
 
         if (event === 'type') {
             socket.send(JSON.stringify({ event: 'type', data: 'client' }))
         }
+
+        if (destination !== 'client') return
 
         if (event === 'status') {
             cardContainer.innerHTML = ''

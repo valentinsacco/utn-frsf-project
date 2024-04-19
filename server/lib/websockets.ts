@@ -23,25 +23,86 @@ interface CustomWebSocket extends WebSocket {
     socket_id: string
 }
 
-export const websockets = (server: ServerType) => {
+export const websockets = async (server: ServerType) => {
     const ws = new Server({ server, clientTracking: true })
 
     let node_name: string | undefined = undefined
     let ping_time: number = Date.now()
     let pong_time: number | undefined = undefined
-    let last_pong_time: number | undefined = undefined
     let latency: number | undefined = undefined
-    let node_disconnected: boolean = false
     let socket_type: string | null = null
     let start_measuring: boolean = false
     let socket_id_under_measure: string | undefined = undefined
     let measure_id: number | undefined = undefined
     let nodes: Node[] = []
 
+    const sockets = await prisma.node.findMany()
+
+    const activeSockets: string[] = []
+    let inactiveSockets: Node[] = []
+    let lastInactiveSocketsLength = 0
+
+    setInterval(async () => {
+        ;(ws.clients as Set<CustomWebSocket>).forEach(
+            (client: CustomWebSocket) => {
+                const socketId = client.socket_id
+
+                if (typeof socketId === 'string' && socketId !== 'client') {
+                    activeSockets.includes(socketId)
+                        ? null
+                        : activeSockets.push(socketId)
+                }
+            }
+        )
+
+        inactiveSockets = sockets.filter((socket) => {
+            return !activeSockets.includes(socket.name)
+        })
+
+    }, 1000)
+
+    if (lastInactiveSocketsLength !== inactiveSockets.length) {
+        lastInactiveSocketsLength = inactiveSockets.length
+
+        for (const inactiveSocket of inactiveSockets) {
+            try {
+                await prisma.node.update({
+                    where: {
+                        name: inactiveSocket.name
+                    },
+                    data: {
+                        status: false
+                    }
+                })
+
+                const nodesFromDB = await prisma.node.findMany()
+
+                nodes = nodesFromDB
+
+                ws.clients.forEach((client) => {
+                    if (client.readyState === OPEN) {
+                        client.send(
+                            JSON.stringify({
+                                destination: 'client',
+                                event: 'status',
+                                data: nodesFromDB
+                            })
+                        )
+                    }
+                })
+            } catch (error) {
+                if (error instanceof Error) {
+                    console.log(error.message)
+                }
+                console.log(error)
+            }
+        }
+    }
+
     ws.on('connection', async (socket: CustomWebSocket) => {
         // Indentificar que tipo de conexión es: 'client' o 'node'
         socket.send(JSON.stringify({ event: 'type', data: 'server' }))
-
+        
         setInterval(() => {
             const currentTime = Date.now()
             socket.send(JSON.stringify({ event: 'ping', data: currentTime }))
@@ -54,6 +115,10 @@ export const websockets = (server: ServerType) => {
             const { event, data } = message
             const nodeName = message?.nodeName
 
+            if (DEBUG) {
+                console.log('📨 [server]:', event, data)
+            }
+
             if (event === 'pong') {
                 const end_time: number = Date.now()
                 latency = end_time - ping_time!
@@ -61,11 +126,13 @@ export const websockets = (server: ServerType) => {
 
                 if (DEBUG) {
                     console.log(pong_time, ' - ', ping_time)
-                    
-                    console.log(`🏓 [server]: Latencia (${nodeName}): ${latency}ms`)
+
+                    console.log(
+                        `🏓 [server]: Latencia (${nodeName}): ${latency}ms`
+                    )
                 }
 
-                const nodeWithLatency = nodes.map(node => {
+                const nodeWithLatency = nodes.map((node) => {
                     if (node.name === nodeName) {
                         return {
                             ...node,
@@ -94,7 +161,14 @@ export const websockets = (server: ServerType) => {
                 if (data === 'node') {
                     socket_type = SocketType.NODE
                     node_name = nodeName
+                    socket.socket_id = nodeName
                     console.log(`🎉 [server]: Nodo ${node_name} conectado`)
+
+                    activeSockets.push(node_name!)
+
+                    inactiveSockets = sockets.filter((socket) => {
+                        return !activeSockets.includes(socket.name)
+                    })
 
                     try {
                         await prisma.node.upsert({
@@ -135,6 +209,7 @@ export const websockets = (server: ServerType) => {
 
                 if (data === 'client') {
                     socket_type = SocketType.CLIENT
+                    socket.socket_id = 'client'
                     console.log('🎉 [server]: Nuevo cliente conectado')
 
                     try {
@@ -222,7 +297,6 @@ export const websockets = (server: ServerType) => {
                 ws.clients.forEach((client) => {
                     // Este if hace que se envién los datos a todos los clientes menos al que envía los datos
                     if (client !== socket && client.readyState === OPEN) {
-                        // client !== socket
                         client.send(
                             JSON.stringify({
                                 destination: 'client',
@@ -230,7 +304,7 @@ export const websockets = (server: ServerType) => {
                                 nodeName,
                                 data
                             })
-                        ) // Cambiar a continuousData
+                        )
                     }
                 })
             }
